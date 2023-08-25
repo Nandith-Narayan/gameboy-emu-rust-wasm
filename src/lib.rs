@@ -15,5 +15,5 @@ extern {
 
 #[wasm_bindgen]
 pub fn greet() {
-    alert("Hello, gameboy_emu_wasm!");
+    alert("Hello, World!");
 }

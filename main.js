@@ -10,3 +10,5 @@ const runWasm = async() => {
    greet();
 
 };
+
+runWasm();
