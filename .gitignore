@@ -1,0 +1,11 @@
+/target
+**/*.rs.bk
+Cargo.lock
+bin/
+pkg/
+wasm-pack.log
+/gameboy_emu_wasm.iml
+/.travis.yml
+/.idea/
+/.cargo/
+/.appveyor.yml
