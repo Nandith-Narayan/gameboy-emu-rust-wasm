@@ -1,8 +1,8 @@
-const B: usize = 0;
-const C: usize = 1;
-const D: usize = 2;
-const E: usize = 3;
-const H: usize = 4;
-const L: usize = 5;
-const F: usize = 6;
-const A: usize = 7;
+pub const B: usize = 0;
+pub const C: usize = 1;
+pub const D: usize = 2;
+pub const E: usize = 3;
+pub const H: usize = 4;
+pub const L: usize = 5;
+pub const F: usize = 6;
+pub const A: usize = 7;
