@@ -1,10 +1,10 @@
 import init, {
-    greet,
+    run,
     initialize_rom
 }
 from "./pkg/gameboy_emu_wasm.js";
 
-data = []
+let data = []
 
 await init("./pkg/gameboy_emu_wasm_bg.wasm");
 
@@ -17,7 +17,7 @@ const runWasm = async() => {
 
 const fileSelector = document.getElementById('rom-select');
 fileSelector.addEventListener('change', (event) => {
-    rom = event.target.files[0];
+    let rom = event.target.files[0];
     let reader = new FileReader();
     reader.onload = function (e) {
         // binary data
