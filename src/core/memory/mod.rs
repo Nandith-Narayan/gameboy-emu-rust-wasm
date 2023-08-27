@@ -1,7 +1,7 @@
 mod mbc1;
 
 pub struct Memory{
-    rom: Vec<u8>, // Cartridge ROM
+    pub rom: Vec<u8>, // Cartridge ROM
     ram: Vec<u8>, // Cartridge RAM
     vram: Vec<u8>, // Video RAM
     wram: Vec<u8>, // Work RAM

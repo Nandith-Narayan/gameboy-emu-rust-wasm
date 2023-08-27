@@ -1,6 +1,7 @@
 mod utils;
 mod core;
 
+use std::panic;
 use std::sync::Mutex;
 use lazy_static::lazy_static;
 use wasm_bindgen::prelude::*;
@@ -23,8 +24,28 @@ extern {
 }
 
 #[wasm_bindgen]
-pub fn greet() {
+pub fn initialize_rom(rom: Vec<u8>) {
+    panic::set_hook(Box::new(console_error_panic_hook::hook));
     let mut gb_cpu = GB_CPU.lock().unwrap();
     gb_cpu.init();
-    alert("Hello, World!");
+
+    gb_cpu.mem.rom = vec![0; 0x40000];
+
+    // Load ROM data into memory
+    for i in 0..rom.len(){
+        gb_cpu.mem.rom[i] = rom[i];
+    }
+}
+
+
+
+#[wasm_bindgen]
+pub fn run() {
+    let mut gb_cpu = GB_CPU.lock().unwrap();
+
+    for i in 0..100usize{
+        gb_cpu.execute();
+    }
+
+    //alert("Hello, World!");
 }

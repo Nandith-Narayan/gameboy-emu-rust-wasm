@@ -9,3 +9,4 @@ wasm-pack.log
 /.idea/
 /.cargo/
 /.appveyor.yml
+/roms/

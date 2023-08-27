@@ -57,6 +57,38 @@ impl CPU{
             0x6B => {self.reg[L] = self.reg[E]; self.pc+=1; 4} // LD L, E
             0x6C => {self.reg[L] = self.reg[H]; self.pc+=1; 4} // LD L, H
             0x6D => {self.reg[L] = self.reg[L]; self.pc+=1; 4} // LD L, L
+            0x78 => {self.reg[A] = self.reg[B]; self.pc+=1; 4} // LD A, B
+            0x79 => {self.reg[A] = self.reg[C]; self.pc+=1; 4} // LD A, C
+            0x7A => {self.reg[A] = self.reg[D]; self.pc+=1; 4} // LD A, D
+            0x7B => {self.reg[A] = self.reg[E]; self.pc+=1; 4} // LD A, E
+            0x7C => {self.reg[A] = self.reg[H]; self.pc+=1; 4} // LD A, H
+            0x7D => {self.reg[A] = self.reg[L]; self.pc+=1; 4} // LD A, L
+            0x47 => {self.reg[B] = self.reg[A]; self.pc+=1; 4} // LD B, A
+            0x57 => {self.reg[A] = self.reg[A]; self.pc+=1; 4} // LD D, A
+            0x67 => {self.reg[A] = self.reg[A]; self.pc+=1; 4} // LD H, A
+            0x4F => {self.reg[C] = self.reg[A]; self.pc+=1; 4} // LD C, A
+            0x5F => {self.reg[E] = self.reg[A]; self.pc+=1; 4} // LD E, A
+            0x6F => {self.reg[L] = self.reg[A]; self.pc+=1; 4} // LD L, A
+            0x7F => {self.reg[A] = self.reg[A]; self.pc+=1; 4} // LD A, A
+
+            // 8 Bit register stores
+            0x70 => {self.mem.write_8bit(self.get_hl() as usize, self.reg[B]); self.pc+=1; 8} // LD (HL), B
+            0x71 => {self.mem.write_8bit(self.get_hl() as usize, self.reg[C]); self.pc+=1; 8} // LD (HL), C
+            0x72 => {self.mem.write_8bit(self.get_hl() as usize, self.reg[D]); self.pc+=1; 8} // LD (HL), D
+            0x73 => {self.mem.write_8bit(self.get_hl() as usize, self.reg[E]); self.pc+=1; 8} // LD (HL), E
+            0x74 => {self.mem.write_8bit(self.get_hl() as usize, self.reg[H]); self.pc+=1; 8} // LD (HL), H
+            0x75 => {self.mem.write_8bit(self.get_hl() as usize, self.reg[L]); self.pc+=1; 8} // LD (HL), L
+            0x77 => {self.mem.write_8bit(self.get_hl() as usize, self.reg[A]); self.pc+=1; 8} // LD (HL), A
+            0x46 => {self.reg[B] = self.mem.read_8bit(self.get_hl() as usize); self.pc+=1; 8} // LD B, (HL)
+            0x56 => {self.reg[D] = self.mem.read_8bit(self.get_hl() as usize); self.pc+=1; 8} // LD D, (HL)
+            0x66 => {self.reg[H] = self.mem.read_8bit(self.get_hl() as usize); self.pc+=1; 8} // LD H, (HL)
+            0x4E => {self.reg[H] = self.mem.read_8bit(self.get_hl() as usize); self.pc+=1; 8} // LD C, (HL)
+
+            // Jumps
+            0xC3 => {self.pc = ((self.mem.read_8bit(self.pc + 2) as usize) << 8)+(self.mem.read_8bit(self.pc + 1) as usize); 16} // JUMP
+
+            // HALT
+            0x76 => {4} // HALT
             _ => {4}
         };
 
