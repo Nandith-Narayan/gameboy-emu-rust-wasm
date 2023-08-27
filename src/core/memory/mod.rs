@@ -1,3 +1,5 @@
+mod mbc1;
+
 pub struct Memory{
     rom: Vec<u8>, // Cartridge ROM
     ram: Vec<u8>, // Cartridge RAM
@@ -24,4 +26,27 @@ pub fn init_memory() -> Memory{
         rom_bank: 0,
         ram_bank: 0,
     };
+}
+
+impl Memory {
+    pub fn read_8bit(&self, address: usize) -> u8{
+        return match address {
+            // Common Memory Sections
+            // Video RAM
+            0x8000..=0x9FFF => {self.vram[address-0x8000]},
+            // Work RAM
+            0xC000..=0xCFFF => {self.wram[address-0xC000]},
+            // Work RAM bank
+            0xD000..=0xDFFF => {self.wram[address-0xC000]},
+            // Object Attribute Memory
+            0xFE00..=0xFE9F => {self.oam[address-0xFE00]},
+            // IO Registers
+            0xFF00..=0xFF7F => {self.io_reg[address-0xFF00]},
+            // High RAM
+            0xFF80..=0xFFFE => {self.hram[address-0xFF80]},
+
+            // MBC mapped memory
+            _ => {self.read_8bit_mbc1(address)}
+        };
+    }
 }
