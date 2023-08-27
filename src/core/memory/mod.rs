@@ -10,7 +10,7 @@ pub struct Memory{
     hram: Vec<u8>, // High RAM
     rom_bank: usize,
     ram_bank: usize,
-
+    bank_mode: BankingMode,
 
 }
 
@@ -25,6 +25,7 @@ pub fn init_memory() -> Memory{
         hram: vec![0; 0x0080],
         rom_bank: 0,
         ram_bank: 0,
+        bank_mode: BankingMode::ROM,
     };
 }
 
@@ -49,4 +50,29 @@ impl Memory {
             _ => {self.read_8bit_mbc1(address)}
         };
     }
+    pub fn write_8bit(&mut self, address: usize, value: u8){
+        match address {
+            // Common Memory Sections
+            // Video RAM
+            0x8000..=0x9FFF => {self.vram[address-0x8000] = value;},
+            // Work RAM
+            0xC000..=0xCFFF => {self.wram[address-0xC000] = value;},
+            // Work RAM bank
+            0xD000..=0xDFFF => {self.wram[address-0xC000] = value;},
+            // Object Attribute Memory
+            0xFE00..=0xFE9F => {self.oam[address-0xFE00] = value;},
+            // IO Registers
+            0xFF00..=0xFF7F => {self.io_reg[address-0xFF00] = value;},
+            // High RAM
+            0xFF80..=0xFFFE => {self.hram[address-0xFF80] = value;},
+
+            // MBC mapped memory
+            _ => {self.write_8bit_mbc1(address, value);}
+        };
+    }
+}
+
+enum BankingMode{
+    ROM,
+    RAM,
 }
