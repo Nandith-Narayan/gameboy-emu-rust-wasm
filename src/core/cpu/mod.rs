@@ -1,3 +1,5 @@
+mod instruction;
+mod execute;
 
 use crate::core::memory::{init_memory, Memory};
 
