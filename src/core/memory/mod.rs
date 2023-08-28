@@ -1,3 +1,4 @@
+use js_sys::Atomics::add;
 use crate::console_print;
 
 mod mbc1;
@@ -14,6 +15,7 @@ pub struct Memory{
     ram_bank: usize,
     bank_mode: BankingMode,
 
+    pub debug_string: String,
 }
 
 pub fn init_memory() -> Memory{
@@ -28,6 +30,7 @@ pub fn init_memory() -> Memory{
         rom_bank: 1,
         ram_bank: 1,
         bank_mode: BankingMode::ROM,
+        debug_string: "".to_string(),
     };
 }
 
@@ -65,7 +68,10 @@ impl Memory {
             0xFE00..=0xFE9F => {self.oam[address-0xFE00] = value;},
             // IO Registers
             0xFF00..=0xFF7F => {self.io_reg[address-0xFF00] = value;
-                console_print(format!("{:#06X} {:#04X}", address, value).as_str());
+                //console_print(format!("{:#06X} {:#04X}", address, value).as_str());
+                if address == 0xFF02 && value == 0x81{
+                    self.debug_string.push(self.io_reg[1] as char);
+                }
             },
             // High RAM
             0xFF80..=0xFFFE => {self.hram[address-0xFF80] = value;},

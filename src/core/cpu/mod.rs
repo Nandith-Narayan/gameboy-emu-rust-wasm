@@ -148,4 +148,31 @@ impl CPU{
 
         return result;
     }
+    pub fn add_and_set_flags(&mut self, a: u8, b: u8) -> u8{
+
+        let result = a.wrapping_add(b);
+
+        if result == 0{
+            self.set_zero_flag();
+        }else{
+            self.clear_zero_flag();
+        }
+
+        self.clear_sub_flag();
+
+        if (a ^ b ^ result) & 0x10 == 0x10{
+            self.set_half_carry_flag();
+        }else{
+            self.clear_half_carry_flag();
+        }
+
+        if ((a as u16) ^ (b as u16) ^ ((a as u16).wrapping_sub(b as u16))) & 0x100 == 0x100{
+            self.set_carry_flag();
+        }else{
+            self.clear_carry_flag();
+        }
+
+
+        return result;
+    }
 }

@@ -169,6 +169,15 @@ impl CPU{
             0x95 => {self.reg[A] = self.sub_and_set_flags(self.reg[A], self.reg[L]); self.pc+=1; 4} // SUB L
             0xD6 => {self.reg[A] = self.sub_and_set_flags(self.reg[A], self.mem.read_8bit(self.pc+1)); self.pc+=2; 8} // SUB d8
 
+            // Addition
+            0x80 => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[B]); self.pc+=1; 4} // ADD B
+            0x81 => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[C]); self.pc+=1; 4} // ADD C
+            0x82 => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[D]); self.pc+=1; 4} // ADD D
+            0x83 => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[E]); self.pc+=1; 4} // ADD E
+            0x84 => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[H]); self.pc+=1; 4} // ADD H
+            0x85 => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[L]); self.pc+=1; 4} // ADD L
+            0xC6 => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.mem.read_8bit(self.pc+1)); self.pc+=2; 8} // ADD d8
+
             // Compare
             0xB8 => {self.sub_and_set_flags(self.reg[A], self.reg[B]); self.pc+=1; 4} // CP B
             0xB9 => {self.sub_and_set_flags(self.reg[A], self.reg[C]); self.pc+=1; 4} // CP C
@@ -185,7 +194,7 @@ impl CPU{
             0xB3 => {self.reg[A] = self.reg[A] | self.reg[E]; if self.reg[A] == 0{self.set_zero_flag()}else{self.clear_zero_flag()}; self.clear_sub_flag(); self.clear_half_carry_flag(); self.clear_carry_flag(); self.pc+=1; 4} // OR E
             0xB4 => {self.reg[A] = self.reg[A] | self.reg[H]; if self.reg[A] == 0{self.set_zero_flag()}else{self.clear_zero_flag()}; self.clear_sub_flag(); self.clear_half_carry_flag(); self.clear_carry_flag(); self.pc+=1; 4} // OR H
             0xB5 => {self.reg[A] = self.reg[A] | self.reg[L]; if self.reg[A] == 0{self.set_zero_flag()}else{self.clear_zero_flag()}; self.clear_sub_flag(); self.clear_half_carry_flag(); self.clear_carry_flag(); self.pc+=1; 4} // OR L
-            0xB6 => {self.reg[A] = self.reg[A] | self.reg[A]; if self.reg[A] == 0{self.set_zero_flag()}else{self.clear_zero_flag()}; self.clear_sub_flag(); self.clear_half_carry_flag(); self.clear_carry_flag(); self.pc+=1; 4} // OR A
+            0xB7 => {self.reg[A] = self.reg[A] | self.reg[A]; if self.reg[A] == 0{self.set_zero_flag()}else{self.clear_zero_flag()}; self.clear_sub_flag(); self.clear_half_carry_flag(); self.clear_carry_flag(); self.pc+=1; 4} // OR A
             0xF6 => {self.reg[A] = self.reg[A] | (self.mem.read_8bit(self.pc+1)); if self.reg[A] == 0{self.set_zero_flag()}else{self.clear_zero_flag()}; self.clear_sub_flag(); self.clear_half_carry_flag(); self.clear_carry_flag(); self.pc+=2; 8} // OR d8
             0xA0 => {self.reg[A] = self.reg[A] & self.reg[B]; if self.reg[A] == 0{self.set_zero_flag()}else{self.clear_zero_flag()}; self.clear_sub_flag(); self.set_half_carry_flag(); self.clear_carry_flag(); self.pc+=1; 4} // AND B
             0xA1 => {self.reg[A] = self.reg[A] & self.reg[C]; if self.reg[A] == 0{self.set_zero_flag()}else{self.clear_zero_flag()}; self.clear_sub_flag(); self.set_half_carry_flag(); self.clear_carry_flag(); self.pc+=1; 4} // AND C
@@ -193,7 +202,7 @@ impl CPU{
             0xA3 => {self.reg[A] = self.reg[A] & self.reg[E]; if self.reg[A] == 0{self.set_zero_flag()}else{self.clear_zero_flag()}; self.clear_sub_flag(); self.set_half_carry_flag(); self.clear_carry_flag(); self.pc+=1; 4} // AND E
             0xA4 => {self.reg[A] = self.reg[A] & self.reg[H]; if self.reg[A] == 0{self.set_zero_flag()}else{self.clear_zero_flag()}; self.clear_sub_flag(); self.set_half_carry_flag(); self.clear_carry_flag(); self.pc+=1; 4} // AND H
             0xA5 => {self.reg[A] = self.reg[A] & self.reg[L]; if self.reg[A] == 0{self.set_zero_flag()}else{self.clear_zero_flag()}; self.clear_sub_flag(); self.set_half_carry_flag(); self.clear_carry_flag(); self.pc+=1; 4} // AND L
-            0xA6 => {self.reg[A] = self.reg[A] & self.reg[A]; if self.reg[A] == 0{self.set_zero_flag()}else{self.clear_zero_flag()}; self.clear_sub_flag(); self.set_half_carry_flag(); self.clear_carry_flag(); self.pc+=1; 4} // AND A
+            0xA7 => {self.reg[A] = self.reg[A] & self.reg[A]; if self.reg[A] == 0{self.set_zero_flag()}else{self.clear_zero_flag()}; self.clear_sub_flag(); self.set_half_carry_flag(); self.clear_carry_flag(); self.pc+=1; 4} // AND A
             0xE6 => {self.reg[A] = self.reg[A] & (self.mem.read_8bit(self.pc+1)); if self.reg[A] == 0{self.set_zero_flag()}else{self.clear_zero_flag()}; self.clear_sub_flag(); self.set_half_carry_flag(); self.clear_carry_flag(); self.pc+=2; 8} // AND d8
             0xA8 => {self.reg[A] = self.reg[A] ^ self.reg[B]; if self.reg[A] == 0{self.set_zero_flag()}else{self.clear_zero_flag()}; self.clear_sub_flag(); self.clear_half_carry_flag(); self.clear_carry_flag(); self.pc+=1; 4} // XOR B
             0xA9 => {self.reg[A] = self.reg[A] ^ self.reg[C]; if self.reg[A] == 0{self.set_zero_flag()}else{self.clear_zero_flag()}; self.clear_sub_flag(); self.clear_half_carry_flag(); self.clear_carry_flag(); self.pc+=1; 4} // XOR C
@@ -207,7 +216,9 @@ impl CPU{
 
             // HALT
             0x76 => {4} // HALT
-            _ => {self.pc+=1;console_print(format!("Opcode not implemented: {:#04X} at {:#06X}", opcode, self.pc-1).as_str()); 4}
+            _ => {self.pc+=1;
+                //console_print(format!("Opcode not implemented: {:#04X} at {:#06X}", opcode, self.pc-1).as_str());
+                4}
         };
 
         return 0;

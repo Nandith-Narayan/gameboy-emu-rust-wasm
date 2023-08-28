@@ -49,6 +49,7 @@ pub fn run() {
     for _ in 0..3200_000usize{
         gb_cpu.execute();
     }
+    console_print(gb_cpu.mem.debug_string.as_str());
     console_print("done");
     //alert("Hello, World!");
 }
