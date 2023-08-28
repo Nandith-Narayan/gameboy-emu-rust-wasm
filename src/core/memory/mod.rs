@@ -1,3 +1,5 @@
+use crate::console_print;
+
 mod mbc1;
 
 pub struct Memory{
@@ -23,8 +25,8 @@ pub fn init_memory() -> Memory{
         oam: vec![0; 0x00A0],
         io_reg: vec![0; 0x0080],
         hram: vec![0; 0x0080],
-        rom_bank: 0,
-        ram_bank: 0,
+        rom_bank: 1,
+        ram_bank: 1,
         bank_mode: BankingMode::ROM,
     };
 }
@@ -62,13 +64,22 @@ impl Memory {
             // Object Attribute Memory
             0xFE00..=0xFE9F => {self.oam[address-0xFE00] = value;},
             // IO Registers
-            0xFF00..=0xFF7F => {self.io_reg[address-0xFF00] = value;},
+            0xFF00..=0xFF7F => {self.io_reg[address-0xFF00] = value;
+                console_print(format!("{:#06X} {:#04X}", address, value).as_str());
+            },
             // High RAM
             0xFF80..=0xFFFE => {self.hram[address-0xFF80] = value;},
 
             // MBC mapped memory
             _ => {self.write_8bit_mbc1(address, value);}
         };
+    }
+    pub fn read_16bit(&mut self, address: usize) -> u16{
+        return ((self.read_8bit(address + 1) as u16) << 8)+(self.read_8bit(address) as u16);
+    }
+    pub fn write_16bit(&mut self, address: usize, value: u16){
+        self.write_8bit(address, (value & 0xFF) as u8);
+        self.write_8bit(address+1, ((value >> 8) & 0xFF) as u8);
     }
 }
 

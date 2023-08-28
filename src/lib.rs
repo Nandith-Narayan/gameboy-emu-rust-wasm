@@ -14,13 +14,16 @@ use crate::core::cpu::CPU;
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 lazy_static! {
-    static ref GB_CPU: Mutex<CPU> = Mutex::new(CPU{ reg: [0; 8], pc: 0, mem: core::memory::init_memory() });
+    static ref GB_CPU: Mutex<CPU> = Mutex::new(CPU{ reg: [0; 8], pc: 0, sp: 0,mem: core::memory::init_memory() });
 }
 
 
 #[wasm_bindgen]
 extern {
     fn alert(s: &str);
+
+    #[wasm_bindgen(js_namespace = console, js_name = log)]
+    fn console_print(s: &str);
 }
 
 #[wasm_bindgen]
@@ -43,9 +46,9 @@ pub fn initialize_rom(rom: Vec<u8>) {
 pub fn run() {
     let mut gb_cpu = GB_CPU.lock().unwrap();
 
-    for i in 0..100usize{
+    for _ in 0..3200_000usize{
         gb_cpu.execute();
     }
-
+    console_print("done");
     //alert("Hello, World!");
 }

@@ -1,3 +1,4 @@
+use crate::console_print;
 use crate::core::memory::{BankingMode, Memory};
 use crate::core::memory::BankingMode::{RAM, ROM};
 
@@ -11,7 +12,7 @@ impl Memory{
             // RAM Banks
             0xA000..=0xBFFF => {self.rom[address-0xA000 + self.ram_bank*0x2000]},
 
-            _ => {0}
+            _ => {0xFE}
         };
     }
 
@@ -38,7 +39,7 @@ impl Memory{
                     self.bank_mode = RAM;
                 }
             },
-            _ => {}
+            _ => {console_print(format!("Writing to unknown memory: {:#06X} {:#04X}", address, value).as_str())}
         };
     }
 }
