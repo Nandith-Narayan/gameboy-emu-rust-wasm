@@ -1,4 +1,5 @@
 mod execute;
+mod shift_ops;
 
 use crate::console_print;
 use crate::core::constants::{A, B, C, D, E, F, H, L};
