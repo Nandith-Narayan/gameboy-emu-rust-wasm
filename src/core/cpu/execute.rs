@@ -11,7 +11,12 @@ impl CPU{
         //console_print(format!("A: {:02X} F: {:02X} B: {:02X} C: {:02X} D: {:02X} E: {:02X} H: {:02X} L: {:02X} SP: {:04X} PC: 00:{:04X} {:#04X}", self.reg[A], self.reg[F], self.reg[B], self.reg[C], self.reg[D], self.reg[E], self.reg[H], self.reg[L],self.sp, self.pc, opcode).as_str());
 
         let cycle_count: usize = match opcode{
+            // Special
             0x00 => {self.pc+=1; 4} // NOP
+            0x2F => {self.reg[A] = self.reg[A] ^ 0xFF; self.pc+=1; 4} //  CPL (Complement A)
+            0x37 => {self.set_carry_flag(); self.clear_half_carry_flag(); self.clear_sub_flag(); self.pc+=1; 4} // SCF (Set Carry Flag)
+            0x3F => {if self.is_carry_flag_set(){self.clear_carry_flag()}else{self.set_carry_flag()}; self.clear_half_carry_flag(); self.clear_sub_flag(); self.pc+=1; 4} // CCF (Flip Carry Flag)
+
 
             // 8 Bit register loads
             0x06 => {self.reg[B] = self.mem.read_8bit(self.pc+1); self.pc+=2; 8} // LD B, d8
@@ -119,6 +124,10 @@ impl CPU{
             0x2B => {self.dec_hl(); self.pc+=1; 8} // DEC HL
             0x33 => {self.sp+=1; self.pc+=1; 8} // INC SP
             0x3B => {self.sp-=1; self.pc+=1; 8} // DEC SP
+            0x09 => {self.add_to_hl_and_set_flags(self.get_bc()); self.pc+=1; 8} // ADD HL, BC
+            0x19 => {self.add_to_hl_and_set_flags(self.get_de()); self.pc+=1; 8} // ADD HL, DE
+            0x29 => {self.add_to_hl_and_set_flags(self.get_hl()); self.pc+=1; 8} // ADD HL, HL
+            0x39 => {self.add_to_hl_and_set_flags(self.sp as u16); self.pc+=1; 8} // ADD HL, SP
 
             // 8 Bit register operations
             0x04 => {self.reg[B] = self.reg[B].wrapping_add(1); self.clear_sub_flag(); if self.reg[B] == 0{self.set_zero_flag();}else{self.clear_zero_flag();}; self.pc+=1; if self.reg[B] & 0xF == 0x0{self.set_half_carry_flag()}else{self.clear_half_carry_flag()}; 4} // INC B
@@ -145,6 +154,7 @@ impl CPU{
             0x28 => {if self.is_zero_flag_set(){self.pc = ((self.pc as i32) + (self.mem.read_8bit(self.pc + 1) as i8 + 2) as i32) as usize; 12} else {self.pc+=2; 8}} // JR Z, r8
             0x38 => {if self.is_carry_flag_set(){self.pc = ((self.pc as i32) + (self.mem.read_8bit(self.pc + 1) as i8 + 2) as i32) as usize; 12} else {self.pc+=2; 8}} // JR C, r8
             0x18 => {self.pc = ((self.pc as i32) + (self.mem.read_8bit(self.pc + 1) as i8 + 2) as i32) as usize; 12} // JR r8
+            0xE9 => {self.pc = self.get_hl() as usize; 4} // JP HL
 
             // Calls
             0xCD => {self.mem.write_16bit(self.sp-1, self.pc as u16 + 3); self.sp-=2; self.pc = self.mem.read_16bit(self.pc + 1) as usize; 24} // CALL a16
@@ -186,13 +196,13 @@ impl CPU{
             0x84 => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[H]); self.pc+=1; 4} // ADD H
             0x85 => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[L]); self.pc+=1; 4} // ADD L
             0xC6 => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.mem.read_8bit(self.pc+1)); self.pc+=2; 8} // ADD d8
-            0x88 => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[B]+if self.is_carry_flag_set(){1}else{0}); self.pc+=1; 4} // ADC B
-            0x89 => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[C]+if self.is_carry_flag_set(){1}else{0}); self.pc+=1; 4} // ADC C
-            0x8A => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[D]+if self.is_carry_flag_set(){1}else{0}); self.pc+=1; 4} // ADC D
-            0x8B => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[E]+if self.is_carry_flag_set(){1}else{0}); self.pc+=1; 4} // ADC E
-            0x8C => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[H]+if self.is_carry_flag_set(){1}else{0}); self.pc+=1; 4} // ADC H
-            0x8D => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[L]+if self.is_carry_flag_set(){1}else{0}); self.pc+=1; 4} // ADC L
-            0xCE => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.mem.read_8bit(self.pc+1)+if self.is_carry_flag_set(){1}else{0}); self.pc+=2; 8} // ADDC d8
+            0x88 => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[B].wrapping_add(if self.is_carry_flag_set(){1}else{0})); self.pc+=1; 4} // ADC B
+            0x89 => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[C].wrapping_add(if self.is_carry_flag_set(){1}else{0})); self.pc+=1; 4} // ADC C
+            0x8A => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[D].wrapping_add(if self.is_carry_flag_set(){1}else{0})); self.pc+=1; 4} // ADC D
+            0x8B => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[E].wrapping_add(if self.is_carry_flag_set(){1}else{0})); self.pc+=1; 4} // ADC E
+            0x8C => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[H].wrapping_add(if self.is_carry_flag_set(){1}else{0})); self.pc+=1; 4} // ADC H
+            0x8D => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[L].wrapping_add(if self.is_carry_flag_set(){1}else{0})); self.pc+=1; 4} // ADC L
+            0xCE => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.mem.read_8bit(self.pc+1).wrapping_add(if self.is_carry_flag_set(){1}else{0})); self.pc+=2; 8} // ADC d8
 
             // Compare
             0xB8 => {self.sub_and_set_flags(self.reg[A], self.reg[B]); self.pc+=1; 4} // CP B
@@ -201,6 +211,7 @@ impl CPU{
             0xBB => {self.sub_and_set_flags(self.reg[A], self.reg[E]); self.pc+=1; 4} // CP E
             0xBC => {self.sub_and_set_flags(self.reg[A], self.reg[H]); self.pc+=1; 4} // CP H
             0xBD => {self.sub_and_set_flags(self.reg[A], self.reg[L]); self.pc+=1; 4} // CP L
+            0xBF => {self.sub_and_set_flags(self.reg[A], self.reg[A]); self.pc+=1; 4} // CP A
             0xFE => {self.sub_and_set_flags(self.reg[A], self.mem.read_8bit(self.pc+1)); self.pc+=2; 8} // CP d8
 
             // Logical operations

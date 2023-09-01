@@ -176,4 +176,22 @@ impl CPU{
 
         return result;
     }
+    pub fn add_to_hl_and_set_flags(&mut self, value: u16){
+        let a = self.get_hl() as usize;
+        let b = value as usize;
+        let result = self.get_hl().wrapping_add(value);
+        if (((a & 0xFFF) + (b&0xFFF))&0x1000) != 0 {
+            self.set_half_carry_flag();
+        }else {
+            self.clear_half_carry_flag();
+        }
+        // set Carry Flag
+        if (((a & 0xFFFF) + (b&0xFFFF))&0x10000) != 0 {
+            self.set_carry_flag();
+        }else {
+            self.clear_carry_flag();
+        }
+        self.clear_sub_flag();
+        self.set_hl(result);
+    }
 }

@@ -23,13 +23,13 @@ impl CPU{
             0x08..=0x0F => {value = self.rotate_right_circular(value);} // RRC
             0x10..=0x17 => {value = self.rotate_left(value);} // RL
             0x18..=0x1F => {value = self.rotate_right(value);} // RR
-            0x20..=0x27 => {} // SLA
-            0x28..=0x2F => {} // SRA
-            0x30..=0x37 => {} // SWAP
-            0x38..=0x3F => {} // SRL
-            0x40..=0x7F => {} // BIT
-            0x80..=0xBF => {} // RES
-            _ => {} // SET
+            0x20..=0x27 => {console_print(format!("SLA").as_str());} // SLA
+            0x28..=0x2F => {console_print(format!("SRA").as_str());} // SRA
+            0x30..=0x37 => {value = self.swap(value);   } // SWAP
+            0x38..=0x3F => {value = self.shift_right_logical(value);} // SRL
+            0x40..=0x7F => {console_print(format!("BIT").as_str());} // BIT
+            0x80..=0xBF => {console_print(format!("RES").as_str());} // RES
+            _ => {console_print(format!("SET").as_str());} // SET
         };
 
 
@@ -41,6 +41,39 @@ impl CPU{
 
         self.pc+=2;
         return cycle_count;
+    }
+
+    pub fn swap(&mut self, value: u8) -> u8{
+        let result = ((value & 0xF) << 4) + ((value & 0xF0) >> 4);
+
+        self.clear_carry_flag();
+        if result == 0{
+            self.set_zero_flag();
+        }else{
+            self.clear_zero_flag();
+        }
+        self.clear_sub_flag();
+        self.clear_half_carry_flag();
+
+        return result;
+    }
+
+    pub fn shift_right_logical(&mut self, value: u8) -> u8{
+        let result = value >> 1;
+        if value & 0x01 !=0{
+            self.set_carry_flag();
+        }else{
+            self.clear_carry_flag();
+        }
+        if result == 0{
+            self.set_zero_flag();
+        }else{
+            self.clear_zero_flag();
+        }
+        self.clear_sub_flag();
+        self.clear_half_carry_flag();
+
+        return result;
     }
 
     pub fn rotate_left_circular(&mut self, value: u8) -> u8{
