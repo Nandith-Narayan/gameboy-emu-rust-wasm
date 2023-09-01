@@ -71,6 +71,7 @@ impl Memory {
                 //console_print(format!("{:#06X} {:#04X}", address, value).as_str());
                 if address == 0xFF02 && value == 0x81{
                     self.debug_string.push(self.io_reg[1] as char);
+                    //console_print(format!("{}", self.io_reg[1] as char).as_str());
                 }
             },
             // High RAM

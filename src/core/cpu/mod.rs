@@ -10,6 +10,7 @@ pub struct CPU{
     pub pc: usize, // Program counter
     pub sp: usize, // Stack pointer
     pub mem: Memory,
+    pub unique_ops: Vec<u8>,
 }
 
 impl CPU{
@@ -25,6 +26,7 @@ impl CPU{
         self.pc = 0x101;
         self.sp = 0xFFFE;
         self.mem = init_memory();
+        self.unique_ops = vec![];
     }
 
     // Helper functions to read and write 16-Bit registers
@@ -54,7 +56,7 @@ impl CPU{
     }
     pub fn set_af(&mut self, value: u16){
         self.reg[A] = ((value >> 8) & 0x0FF) as u8;
-        self.reg[F] = (value & 0x0FF) as u8;
+        self.reg[F] = (value & 0x0F0) as u8; // Lower bits of flags register must be 0
     }
 
     // Helper functions to increment and decrement 16-Bit registers
