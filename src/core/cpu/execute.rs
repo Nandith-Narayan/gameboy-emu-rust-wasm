@@ -16,6 +16,7 @@ impl CPU{
         let cycle_count: usize = match opcode{
             // Special
             0x00 => {self.pc+=1; 4} // NOP
+            0x27 => {self.daa(); self.pc+=1; 4} // DAA
             0x2F => {self.reg[A] = self.reg[A] ^ 0xFF; self.set_sub_flag(); self.set_half_carry_flag(); self.pc+=1; 4} //  CPL (Complement A)
             0x37 => {self.set_carry_flag(); self.clear_half_carry_flag(); self.clear_sub_flag(); self.pc+=1; 4} // SCF (Set Carry Flag)
             0x3F => {if self.is_carry_flag_set(){self.clear_carry_flag()}else{self.set_carry_flag()}; self.clear_half_carry_flag(); self.clear_sub_flag(); self.pc+=1; 4} // CCF (Flip Carry Flag)
@@ -165,6 +166,8 @@ impl CPU{
             0xCD => {self.mem.write_16bit(self.sp-1, self.pc as u16 + 3); self.sp-=2; self.pc = self.mem.read_16bit(self.pc + 1) as usize; 24} // CALL a16
             0xC4 => {if !self.is_zero_flag_set() {self.mem.write_16bit(self.sp-1, self.pc as u16 + 3); self.sp-=2; self.pc = self.mem.read_16bit(self.pc + 1) as usize; 24}else{self.pc+=3; 12}} // CALL NZ, a16
             0xD4 => {if !self.is_carry_flag_set() {self.mem.write_16bit(self.sp-1, self.pc as u16 + 3); self.sp-=2; self.pc = self.mem.read_16bit(self.pc + 1) as usize; 24}else{self.pc+=3; 12}} // CALL NC, a16
+            0xCC => {if self.is_zero_flag_set() {self.mem.write_16bit(self.sp-1, self.pc as u16 + 3); self.sp-=2; self.pc = self.mem.read_16bit(self.pc + 1) as usize; 24}else{self.pc+=3; 12}} // CALL Z, a16
+            0xDC => {if self.is_carry_flag_set() {self.mem.write_16bit(self.sp-1, self.pc as u16 + 3); self.sp-=2; self.pc = self.mem.read_16bit(self.pc + 1) as usize; 24}else{self.pc+=3; 12}} // CALL C, a16
 
             // Returns
             0xC9 => {let val = self.mem.read_16bit(self.sp+1); self.sp+=2; self.pc = val as usize; 16} // RET

@@ -4,12 +4,14 @@ mod shift_ops;
 use crate::console_print;
 use crate::core::constants::{A, B, C, D, E, F, H, L};
 use crate::core::memory::{init_memory, Memory};
+use crate::core::ppu::{init_ppu, PPU};
 
 pub struct CPU{
     pub reg: [u8; 8], // 8 8-bit registers
     pub pc: usize, // Program counter
     pub sp: usize, // Stack pointer
     pub mem: Memory,
+    pub ppu: PPU,
     pub unique_ops: Vec<u8>,
 }
 
@@ -26,6 +28,7 @@ impl CPU{
         self.pc = 0x101;
         self.sp = 0xFFFE;
         self.mem = init_memory();
+        self.ppu = init_ppu();
         self.unique_ops = vec![];
     }
 
@@ -195,5 +198,29 @@ impl CPU{
         }
         self.clear_sub_flag();
         self.set_hl(result);
+    }
+    pub fn daa(&mut self){
+        if !self.is_sub_flag_set() {
+            if self.is_carry_flag_set() || self.reg[A] > 0x99 {
+                self.reg[A] =self.reg[A].wrapping_add(0x60);
+                self.set_carry_flag();
+            }
+            if self.is_half_carry_flag_set() || (self.reg[A] & 0xF) > 0x9 {
+                self.reg[A] = self.reg[A].wrapping_add(0x6);
+            }
+        } else {  // after a subtraction, only adjust if (half-)carry occurred
+            if self.is_carry_flag_set() {
+                self.reg[A] = self.reg[A].wrapping_sub(0x60);
+            }
+            if self.is_half_carry_flag_set() {
+                self.reg[A] = self.reg[A].wrapping_sub(0x6);
+            }
+        }
+        if self.reg[A] == 0{
+            self.set_zero_flag();
+        }else{
+            self.clear_zero_flag();
+        }
+        self.clear_half_carry_flag();
     }
 }

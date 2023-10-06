@@ -14,7 +14,7 @@ use crate::core::cpu::CPU;
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 lazy_static! {
-    static ref GB_CPU: Mutex<CPU> = Mutex::new(CPU{ reg: [0; 8], pc: 0, sp: 0,mem: core::memory::init_memory(), unique_ops:vec![0]});
+    static ref GB_CPU: Mutex<CPU> = Mutex::new(CPU{ reg: [0; 8], pc: 0, sp: 0,mem: core::memory::init_memory(), ppu: core::ppu::init_ppu(), unique_ops:vec![0]});
 }
 
 
