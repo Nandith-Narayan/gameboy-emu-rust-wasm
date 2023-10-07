@@ -1,8 +1,7 @@
 mod sprite;
-
-use crate::core::cpu::CPU;
 use crate::core::memory::Memory;
 use crate::core::ppu::PPUMode::*;
+use crate::core::ppu::PPUBackgroundFetcherMode::*;
 use crate::core::ppu::sprite::{create_sprite, Sprite};
 
 pub const CYCLES_PER_FRAME: usize = 70224;
@@ -21,6 +20,10 @@ pub struct PPU{
     pub cycle_count: usize,
     sprite_buffer: Vec<Sprite>,
 
+    background_fetcher_mode: PPUBackgroundFetcherMode,
+    scx: usize,
+    scy: usize,
+    ly: usize,
     pub frame_buffer: Vec<u8>,
 }
 
@@ -29,6 +32,11 @@ pub fn init_ppu() -> PPU{
         ppu_mode: OAMScan,
         cycle_count: 0,
         sprite_buffer: vec![],
+
+        background_fetcher_mode: FetchTileNumber,
+        scx: 0,
+        scy: 0,
+        ly: 0,
 
         frame_buffer: vec![0; 160*144*3],
     };
@@ -60,6 +68,10 @@ impl PPU {
             },
             // PPU actively drawing pixels state
             Drawing => {
+
+                self.load_ppu_registers(mem);
+
+                self.run_ppu_background_fetcher();
 
                 self.cycle_count += 2;
 
@@ -101,6 +113,35 @@ impl PPU {
 
         return finished_frame;
     }
+
+    fn run_ppu_background_fetcher(&mut self){
+        match self.background_fetcher_mode{
+            FetchTileNumber => {
+
+            },
+            FetchTileDataLow => {
+
+            },
+            FetchTileDataHigh => {
+
+            },
+            PushToFIFO => {
+
+            },
+        }
+    }
+
+    fn load_ppu_registers(&mut self, mem: &mut Memory){
+        self.scx = mem.io_reg[0x43] as usize;
+        self.scy = mem.io_reg[0x42] as usize;
+        self.ly = mem.io_reg[0x44] as usize;
+    }
 }
 
+enum PPUBackgroundFetcherMode{
+    FetchTileNumber,
+    FetchTileDataLow,
+    FetchTileDataHigh,
+    PushToFIFO,
+}
 
