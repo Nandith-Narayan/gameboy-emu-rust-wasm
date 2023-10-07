@@ -14,7 +14,7 @@ use crate::core::cpu::CPU;
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 lazy_static! {
-    static ref GB_CPU: Mutex<CPU> = Mutex::new(CPU{ reg: [0; 8], pc: 0, sp: 0,mem: core::memory::init_memory(), ppu: core::ppu::init_ppu(), unique_ops:vec![0]});
+    static ref GB_CPU: Mutex<CPU> = Mutex::new(CPU{ reg: [0; 8], pc: 0, sp: 0, mem: core::memory::init_memory(), ppu: core::ppu::init_ppu(), frame_done: false, unique_ops:vec![0]});
 }
 
 
@@ -43,10 +43,10 @@ pub fn initialize_rom(rom: Vec<u8>) {
 
 
 #[wasm_bindgen]
-pub fn run() {
+pub fn run_until_frame_end() {
     let mut gb_cpu = GB_CPU.lock().unwrap();
-
-    for _ in 0..10_000_000usize{
+    gb_cpu.frame_done = false;
+    while !gb_cpu.frame_done{
         gb_cpu.execute();
     }
     console_print(gb_cpu.mem.debug_string.as_str());

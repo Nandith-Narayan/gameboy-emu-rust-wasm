@@ -1,5 +1,5 @@
 import init, {
-    run,
+    run_until_frame_end,
     initialize_rom
 }
 from "./pkg/gameboy_emu_wasm.js";
@@ -10,7 +10,7 @@ await init("./pkg/gameboy_emu_wasm_bg.wasm");
 
 const runWasm = async() => {
 
-   run();
+   run_until_frame_end();
 
 };
 

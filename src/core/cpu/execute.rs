@@ -267,7 +267,11 @@ impl CPU{
                 4}
         };
 
-        return 0;
+        for _ in 0..(cycle_count/2) {
+            self.frame_done |= self.ppu.run_ppu_cycle(&mut self.mem);
+        }
+
+        return cycle_count;
     }
 
 

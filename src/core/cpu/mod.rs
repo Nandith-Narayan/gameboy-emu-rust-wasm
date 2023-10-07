@@ -12,6 +12,7 @@ pub struct CPU{
     pub sp: usize, // Stack pointer
     pub mem: Memory,
     pub ppu: PPU,
+    pub frame_done: bool,
     pub unique_ops: Vec<u8>,
 }
 
@@ -29,6 +30,7 @@ impl CPU{
         self.sp = 0xFFFE;
         self.mem = init_memory();
         self.ppu = init_ppu();
+        self.frame_done = false;
         self.unique_ops = vec![];
     }
 

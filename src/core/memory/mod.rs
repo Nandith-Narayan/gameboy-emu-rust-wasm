@@ -8,7 +8,7 @@ pub struct Memory{
     ram: Vec<u8>, // Cartridge RAM
     vram: Vec<u8>, // Video RAM
     wram: Vec<u8>, // Work RAM
-    oam: Vec<u8>, // Object Attribute Memory
+    pub oam: Vec<u8>, // Object Attribute Memory
     io_reg: Vec<u8>, // IO Registers
     hram: Vec<u8>, // High RAM
     rom_bank: usize,

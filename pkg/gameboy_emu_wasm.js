@@ -73,8 +73,8 @@ export function initialize_rom(rom) {
 
 /**
 */
-export function run() {
-    wasm.run();
+export function run_until_frame_end() {
+    wasm.run_until_frame_end();
 }
 
 function addHeapObject(obj) {
