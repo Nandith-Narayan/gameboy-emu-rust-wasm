@@ -43,7 +43,7 @@ pub fn initialize_rom(rom: Vec<u8>) {
 
 
 #[wasm_bindgen]
-pub fn run_until_frame_end() {
+pub fn run_until_frame_end() -> Vec<u8> {
     let mut gb_cpu = GB_CPU.lock().unwrap();
     gb_cpu.frame_done = false;
     while !gb_cpu.frame_done{
@@ -53,4 +53,6 @@ pub fn run_until_frame_end() {
     console_print("done");
     //console_print(format!("{:?}", gb_cpu.unique_ops).as_str());
     //alert("Hello, World!");
+
+    return gb_cpu.ppu.frame_buffer.clone();
 }

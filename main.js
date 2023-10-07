@@ -8,10 +8,29 @@ let data = []
 
 await init("./pkg/gameboy_emu_wasm_bg.wasm");
 
+let ctx = document.getElementById("canvas").getContext("2d");
+
+
 const runWasm = async() => {
 
-   run_until_frame_end();
+    let frame_data = run_until_frame_end();
 
+
+    for (let y = 0; y < 144; y++) {
+        for (let x = 0; x < 160; x++) {
+            
+            let base_addr = (y * 160 + x) * 3
+            let r = frame_data[base_addr];
+            let g = frame_data[base_addr+1];
+            let b = frame_data[base_addr+2];
+
+            ctx.fillStyle = "rgb("+r+", "+g+", "+b+")"; 
+            ctx.fillRect(x * 5, y * 5, 5, 5);
+            
+        }
+    }
+    // Force 60 fps, even if monitor renders at a higher fps
+    setTimeout(() => {requestAnimationFrame(runWasm);}, 16);
 };
 
 

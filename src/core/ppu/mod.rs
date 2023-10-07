@@ -20,6 +20,8 @@ pub struct PPU{
     pub ppu_mode: PPUMode,
     pub cycle_count: usize,
     sprite_buffer: Vec<Sprite>,
+
+    pub frame_buffer: Vec<u8>,
 }
 
 pub fn init_ppu() -> PPU{
@@ -27,6 +29,8 @@ pub fn init_ppu() -> PPU{
         ppu_mode: OAMScan,
         cycle_count: 0,
         sprite_buffer: vec![],
+
+        frame_buffer: vec![0; 160*144*3],
     };
 }
 
