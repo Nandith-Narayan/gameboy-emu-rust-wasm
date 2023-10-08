@@ -225,4 +225,7 @@ impl CPU{
         }
         self.clear_half_carry_flag();
     }
+    pub fn render_background_tile_data(&mut self) -> Vec<u8>{
+        return self.ppu.render_background_tile_data(&mut self.mem);
+    }
 }

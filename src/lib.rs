@@ -56,3 +56,9 @@ pub fn run_until_frame_end() -> Vec<u8> {
 
     return gb_cpu.ppu.frame_buffer.clone();
 }
+#[wasm_bindgen]
+pub fn get_background_tile_data() -> Vec<u8> {
+    let mut gb_cpu = GB_CPU.lock().unwrap();
+
+    return gb_cpu.render_background_tile_data();
+}

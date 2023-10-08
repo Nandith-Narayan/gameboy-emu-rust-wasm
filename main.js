@@ -1,6 +1,7 @@
 import init, {
     run_until_frame_end,
-    initialize_rom
+    initialize_rom,
+    get_background_tile_data
 }
 from "./pkg/gameboy_emu_wasm.js";
 
@@ -9,6 +10,7 @@ let data = []
 await init("./pkg/gameboy_emu_wasm_bg.wasm");
 
 let ctx = document.getElementById("canvas").getContext("2d");
+let ctx_bg = document.getElementById("background-map-canvas").getContext("2d");
 
 
 const runWasm = async() => {
@@ -29,6 +31,22 @@ const runWasm = async() => {
             
         }
     }
+    
+     let debug_frame_data = get_background_tile_data();
+
+
+    for (let y = 0; y < 256; y++) {
+        for (let x = 0; x < 256; x++) {
+            
+            let base_addr = (y * 256 + x)
+            let r = debug_frame_data[base_addr];
+
+            ctx_bg.fillStyle = "rgb("+r+", "+r+", "+r+")"; 
+            ctx_bg.fillRect(x, y, 1, 1);
+            
+        }
+    }
+    
     // Force 60 fps, even if monitor renders at a higher fps
     setTimeout(() => {requestAnimationFrame(runWasm);}, 16);
 };

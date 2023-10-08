@@ -33,6 +33,7 @@ pub struct PPU{
     tile_number: usize,
     tile_data_low: u8,
     tile_data_high: u8,
+    lcd_x_pos: usize,
     pub frame_buffer: Vec<u8>,
 }
 
@@ -53,6 +54,7 @@ pub fn init_ppu() -> PPU{
         tile_number: 0,
         tile_data_low: 0,
         tile_data_high: 0,
+        lcd_x_pos: 0,
         frame_buffer: vec![0; 160*144*3],
     };
 }
@@ -76,7 +78,7 @@ impl PPU {
                 }
 
                 self.fetcher_x_pos = 0;
-
+                self.lcd_x_pos = 0;
                 self.cycle_count += 2;
                 // OAM scan lasts 80 T-cycles
                 if self.cycle_count % CYCLES_PER_LINE >= 80{
@@ -93,8 +95,8 @@ impl PPU {
                 // Run pixel mixer
                 if !self.background_fifo.is_empty(){
                     let color = self.background_fifo.pop_back().unwrap();
-                    self.draw_pixel(self.fetcher_x_pos, self.ly, color);
-                    self.fetcher_x_pos += 1;
+                    self.draw_pixel(self.lcd_x_pos, self.ly, color);
+                    self.lcd_x_pos += 1;
                 }
 
                 self.cycle_count += 2;
@@ -160,11 +162,11 @@ impl PPU {
                 self.background_fetcher_mode = FetchTileDataLow;
             },
             FetchTileDataLow => {
-                self.tile_data_low = mem.read_8bit((self.tile_number * 16) + 2 * ((self.ly + self.scy) % 8));
+                self.tile_data_low = mem.read_8bit(0x8000 +((self.tile_number * 16) + 2 * ((self.ly + self.scy) % 8)));
                 self.background_fetcher_mode = FetchTileDataHigh;
             },
             FetchTileDataHigh => {
-                self.tile_data_high = mem.read_8bit(((self.tile_number * 16) + 2 * ((self.ly + self.scy) % 8)) + 1);
+                self.tile_data_high = mem.read_8bit(0x8000 +(((self.tile_number * 16) + 2 * ((self.ly + self.scy) % 8)) + 1));
                 self.background_fetcher_mode = PushToFIFO;
             },
             PushToFIFO => {
@@ -173,10 +175,10 @@ impl PPU {
                         let pixel = ((self.tile_data_high & 0x1) << 1) + (self.tile_data_low & 0x1);
                         self.tile_data_low >>= 1;
                         self.tile_data_high >>= 1;
-                        self.background_fifo.push_back(pixel);
+                        self.background_fifo.push_front(pixel);
                     }
                     self.background_fetcher_mode = FetchTileNumber;
-                    //self.fetcher_x_pos += 1;
+                    self.fetcher_x_pos += 1;
                 }
             },
         }
@@ -195,6 +197,28 @@ impl PPU {
         self.scy = mem.io_reg[0x42] as usize;
         self.ly = mem.io_reg[0x44] as usize;
         self.lcdc = mem.io_reg[0x40] as usize;
+    }
+
+    // Function to render the contents of the current background map
+    pub fn render_background_tile_data(&mut self, mem: &mut Memory) -> Vec<u8>{
+        let mut debug_frame = vec![0u8; 256*256];
+        for tile_y in 0..32{
+            for tile_x in 0..32 {
+                let tile_num = tile_y*32 + tile_x;
+                for y in 0..8 {
+                    let mut low_byte = mem.read_8bit(tile_num * 16 + 0x8000 + 2 + y*2);
+                    let mut high_byte = mem.read_8bit(tile_num * 16 + 0x8000 + 1 + y*2);
+
+                    for x in ((tile_x * 8)..(8 * tile_x + 8)).rev() {
+                        let pixel = ((high_byte & 0x1) << 1) + (low_byte & 0x1);
+                        low_byte >>= 1;
+                        high_byte >>= 1;
+                        debug_frame[(x) + (tile_y * 8 + y) * 256] = (4 - pixel) * 60;
+                    }
+                }
+            }
+        }
+        return debug_frame;
     }
 }
 
