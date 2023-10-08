@@ -1,4 +1,6 @@
 mod sprite;
+
+use std::collections::VecDeque;
 use crate::core::memory::Memory;
 use crate::core::ppu::PPUMode::*;
 use crate::core::ppu::PPUBackgroundFetcherMode::*;
@@ -19,11 +21,18 @@ pub struct PPU{
     pub ppu_mode: PPUMode,
     pub cycle_count: usize,
     sprite_buffer: Vec<Sprite>,
+    background_fifo: VecDeque<u8>,
 
     background_fetcher_mode: PPUBackgroundFetcherMode,
     scx: usize,
     scy: usize,
     ly: usize,
+    lcdc: usize, // LCD control
+
+    fetcher_x_pos: usize,
+    tile_number: usize,
+    tile_data_low: u8,
+    tile_data_high: u8,
     pub frame_buffer: Vec<u8>,
 }
 
@@ -32,12 +41,18 @@ pub fn init_ppu() -> PPU{
         ppu_mode: OAMScan,
         cycle_count: 0,
         sprite_buffer: vec![],
+        background_fifo: VecDeque::new(),
 
         background_fetcher_mode: FetchTileNumber,
         scx: 0,
         scy: 0,
         ly: 0,
+        lcdc: 0,
 
+        fetcher_x_pos: 0,
+        tile_number: 0,
+        tile_data_low: 0,
+        tile_data_high: 0,
         frame_buffer: vec![0; 160*144*3],
     };
 }
@@ -60,6 +75,8 @@ impl PPU {
                     self.sprite_buffer.push(sprite);
                 }
 
+                self.fetcher_x_pos = 0;
+
                 self.cycle_count += 2;
                 // OAM scan lasts 80 T-cycles
                 if self.cycle_count % CYCLES_PER_LINE >= 80{
@@ -71,7 +88,14 @@ impl PPU {
 
                 self.load_ppu_registers(mem);
 
-                self.run_ppu_background_fetcher();
+                self.run_ppu_background_fetcher(mem);
+
+                // Run pixel mixer
+                if !self.background_fifo.is_empty(){
+                    let color = self.background_fifo.pop_back().unwrap();
+                    self.draw_pixel(self.fetcher_x_pos, self.ly, color);
+                    self.fetcher_x_pos += 1;
+                }
 
                 self.cycle_count += 2;
 
@@ -88,6 +112,8 @@ impl PPU {
 
                 // End scanline
                 if self.cycle_count % CYCLES_PER_LINE == 0{
+                    self.ly += 1;
+                    mem.io_reg[0x44] = self.ly as u8;
                     // If 144 lines worth of cycles have been completed, enter V-Blank mode
                     // else, enter the next line's OAM scan mode.
                     if self.cycle_count >= CYCLES_UNTIL_VBLANK{
@@ -104,9 +130,14 @@ impl PPU {
 
                 // Prepare to drawn the next frame
                 if self.cycle_count >= CYCLES_PER_FRAME{
+                    self.ly = 0;
+                    mem.io_reg[0x44] = self.ly as u8;
                     self.ppu_mode = OAMScan;
                     finished_frame = true;
                     self.cycle_count %= CYCLES_PER_FRAME;
+                }else{
+                    self.ly += 1;
+                    mem.io_reg[0x44] = self.ly as u8;
                 }
             },
         };
@@ -114,27 +145,56 @@ impl PPU {
         return finished_frame;
     }
 
-    fn run_ppu_background_fetcher(&mut self){
+    fn run_ppu_background_fetcher(&mut self, mem: &mut Memory){
         match self.background_fetcher_mode{
             FetchTileNumber => {
+                let mut tile_address: usize = 0x9800;
+                if self.lcdc & 0x08 != 0{ // Bit 3 of LCDC selects background tile map (0=9800-9BFF, 1=9C00-9FFF)
+                    tile_address = 0x9C00;
+                }
 
+                let x_offset= self.fetcher_x_pos + (self.scx/8) & 0x1F;
+                let y_offset = 32 * (((self.ly + self.scy) & 0xFF) / 8);
+
+                self.tile_number = mem.read_8bit(tile_address + ((x_offset + y_offset) & 0x3FF)) as usize;
+                self.background_fetcher_mode = FetchTileDataLow;
             },
             FetchTileDataLow => {
-
+                self.tile_data_low = mem.read_8bit((self.tile_number * 16) + 2 * ((self.ly + self.scy) % 8));
+                self.background_fetcher_mode = FetchTileDataHigh;
             },
             FetchTileDataHigh => {
-
+                self.tile_data_high = mem.read_8bit(((self.tile_number * 16) + 2 * ((self.ly + self.scy) % 8)) + 1);
+                self.background_fetcher_mode = PushToFIFO;
             },
             PushToFIFO => {
-
+                if self.background_fifo.is_empty() {
+                    for _ in 0..8{
+                        let pixel = ((self.tile_data_high & 0x1) << 1) + (self.tile_data_low & 0x1);
+                        self.tile_data_low >>= 1;
+                        self.tile_data_high >>= 1;
+                        self.background_fifo.push_back(pixel);
+                    }
+                    self.background_fetcher_mode = FetchTileNumber;
+                    //self.fetcher_x_pos += 1;
+                }
             },
         }
+    }
+
+    fn draw_pixel(&mut self, x: usize, y: usize, color: u8){
+        let base_address = (x + (y * 160)) * 3;
+        let pixel = 4 - color;
+        self.frame_buffer[base_address] = pixel * 60;
+        self.frame_buffer[base_address+1] = pixel * 60;
+        self.frame_buffer[base_address+2] = pixel * 60;
     }
 
     fn load_ppu_registers(&mut self, mem: &mut Memory){
         self.scx = mem.io_reg[0x43] as usize;
         self.scy = mem.io_reg[0x42] as usize;
         self.ly = mem.io_reg[0x44] as usize;
+        self.lcdc = mem.io_reg[0x40] as usize;
     }
 }
 
