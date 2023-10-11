@@ -31,6 +31,11 @@ pub struct PPU{
     scx: usize,
     scy: usize,
     ly: usize,
+    wx: usize,
+    wy: usize,
+    wy_eq_ly_occurred: bool,
+    in_window: bool,
+    window_line_counter: usize,
     lcdc: usize, // LCD control
 
     fetcher_x_pos: usize,
@@ -40,6 +45,8 @@ pub struct PPU{
     lcd_x_pos: usize,
 
     current_sprite: Sprite,
+
+    obj_palette: [[u8; 4]; 4],
 
     pub frame_buffer: Vec<u8>,
 }
@@ -56,6 +63,11 @@ pub fn init_ppu() -> PPU{
         scx: 0,
         scy: 0,
         ly: 0,
+        wx: 0,
+        wy: 0,
+        wy_eq_ly_occurred: false,
+        in_window: false,
+        window_line_counter: 0,
         lcdc: 0,
 
         fetcher_x_pos: 0,
@@ -65,6 +77,8 @@ pub fn init_ppu() -> PPU{
         lcd_x_pos: 0,
 
         current_sprite: create_sprite(0, 0, 0, 0),
+
+        obj_palette: [[0; 4]; 4],
 
         frame_buffer: vec![0; 160*144*3],
     };
@@ -130,11 +144,25 @@ impl PPU {
                         if sprite_color.color == 0 || (sprite_color.obj_priority && bg_color != 0){
                             self.draw_pixel(self.lcd_x_pos, self.ly, bg_color);
                         }else{
-                            self.draw_pixel(self.lcd_x_pos, self.ly, sprite_color.color);
+                            let palette_index = if sprite_color.palette_num {1}else{0};
+                            self.draw_pixel(self.lcd_x_pos, self.ly, self.obj_palette[palette_index][sprite_color.color as usize]);
                         }
                     }
                     self.lcd_x_pos += 1;
                 }
+
+                if  !self.wy_eq_ly_occurred && self.wy == self.ly{
+                    self.wy_eq_ly_occurred = true;
+                }
+
+                // Check for window
+                if !self.in_window && self.lcdc & 0x20 != 0 && self.wy_eq_ly_occurred && self.lcd_x_pos +7 >= self.wx{
+                    self.in_window = true;
+                    self.background_fetcher_mode = FetchTileNumber;
+                    self.fetcher_x_pos = 0;
+                    self.background_fifo.clear();
+                }
+
 
                 self.cycle_count += 2;
 
@@ -152,7 +180,10 @@ impl PPU {
                 if self.cycle_count % CYCLES_PER_LINE == 0{
                     self.ly += 1;
                     mem.io_reg[0x44] = self.ly as u8;
-
+                    if self.in_window {
+                        self.window_line_counter += 1;
+                    }
+                    self.in_window = false;
                     // Clear sprite buffer
                     self.sprite_buffer.clear();
                     // If 144 lines worth of cycles have been completed, enter V-Blank mode
@@ -173,6 +204,10 @@ impl PPU {
                 if self.cycle_count >= CYCLES_PER_FRAME{
                     self.ly = 0;
                     mem.io_reg[0x44] = self.ly as u8;
+                    // Reset window registers
+                    self.wy_eq_ly_occurred = false;
+                    self.window_line_counter = 0;
+
                     self.ppu_mode = OAMScan;
                     finished_frame = true;
                     self.cycle_count %= CYCLES_PER_FRAME;
@@ -197,7 +232,7 @@ impl PPU {
                     let pixel = ((tile_data_high & 0x1) << 1) + (tile_data_low & 0x1);
                     tile_data_low >>= 1;
                     tile_data_high >>= 1;
-                    self.sprite_fifo.push_back(Pixel{color:pixel, obj_priority: self.current_sprite.obj_to_bg_priority_flag});
+                    self.sprite_fifo.push_back(Pixel{color:pixel, obj_priority: self.current_sprite.obj_to_bg_priority_flag, palette_num: self.current_sprite.palette_number});
                 }
 
                 self.background_fetcher_mode = FetchTileNumber;
@@ -208,18 +243,34 @@ impl PPU {
                     tile_address = 0x9C00;
                 }
 
-                let x_offset= (self.fetcher_x_pos + (self.scx/8)) & 0x1F;
-                let y_offset = 32 * (((self.ly + self.scy) & 0xFF) / 8);
+                let mut x_offset= self.fetcher_x_pos;
+                if !self.in_window {
+                    x_offset += (self.scx / 8);
+                }
+                x_offset &= 0x1F;
+                let y_offset = if !self.in_window {
+                    32 * (((self.ly + self.scy) & 0xFF) / 8)
+                }else{
+                    32 * (self.window_line_counter / 8)
+                };
 
                 self.tile_number = mem.read_8bit(tile_address + ((x_offset + y_offset) & 0x3FF)) as usize;
                 self.background_fetcher_mode = FetchTileDataLow;
             },
             FetchTileDataLow => {
-                self.tile_data_low = mem.read_8bit(0x8000 +((self.tile_number * 16) + 2 * ((self.ly + self.scy) % 8)));
+                if !self.in_window {
+                    self.tile_data_low = mem.read_8bit(0x8000 + ((self.tile_number * 16) + 2 * ((self.ly + self.scy) % 8)));
+                }else{
+                    self.tile_data_low = mem.read_8bit(0x8000 + ((self.tile_number * 16) + 2 * (self.window_line_counter % 8)));
+                }
                 self.background_fetcher_mode = FetchTileDataHigh;
             },
             FetchTileDataHigh => {
-                self.tile_data_high = mem.read_8bit(0x8000 +(((self.tile_number * 16) + 2 * ((self.ly + self.scy) % 8)) + 1));
+                if !self.in_window {
+                    self.tile_data_high = mem.read_8bit(0x8000 + (((self.tile_number * 16) + 2 * ((self.ly + self.scy) % 8)) + 1));
+                }else{
+                    self.tile_data_high = mem.read_8bit(0x8000 + (((self.tile_number * 16) + 2 * (self.window_line_counter % 8)) + 1));
+                }
                 self.background_fetcher_mode = PushToFIFO;
             },
             PushToFIFO => {
@@ -228,6 +279,7 @@ impl PPU {
                         let pixel = ((self.tile_data_high & 0x1) << 1) + (self.tile_data_low & 0x1);
                         self.tile_data_low >>= 1;
                         self.tile_data_high >>= 1;
+
                         self.background_fifo.push_back(pixel);
                     }
 
@@ -241,10 +293,10 @@ impl PPU {
 
     fn draw_pixel(&mut self, x: usize, y: usize, color: u8){
         let base_address = (x + (y * 160)) * 3;
-        let pixel = 4 - color;
-        self.frame_buffer[base_address] = pixel * 60;
-        self.frame_buffer[base_address+1] = pixel * 60;
-        self.frame_buffer[base_address+2] = pixel * 60;
+        let pixel = 3 - color;
+        self.frame_buffer[base_address] = pixel * 63;
+        self.frame_buffer[base_address+1] = pixel * 63;
+        self.frame_buffer[base_address+2] = pixel * 63;
     }
     // Helper function that directly loads ppu-related io-registers from memory
     fn load_ppu_registers(&mut self, mem: &mut Memory){
@@ -252,6 +304,16 @@ impl PPU {
         self.scy = mem.io_reg[0x42] as usize;
         self.ly = mem.io_reg[0x44] as usize;
         self.lcdc = mem.io_reg[0x40] as usize;
+        self.wy = mem.io_reg[0x4A] as usize;
+        self.wx = mem.io_reg[0x4B] as usize;
+
+        for idx in 0x48..=0x49{
+            let mut byte = mem.io_reg[idx];
+            for palette_idx in 0..4{
+                self.obj_palette[idx-0x48][palette_idx] = byte & 0x3;
+                byte >>= 2;
+            }
+        }
     }
 
     // Function to render the contents of the current background map
@@ -268,7 +330,7 @@ impl PPU {
                         let pixel = ((high_byte & 0x1) << 1) + (low_byte & 0x1);
                         low_byte >>= 1;
                         high_byte >>= 1;
-                        debug_frame[(x) + (tile_y * 8 + y) * 256] = (4 - pixel) * 60;
+                        debug_frame[(x) + (tile_y * 8 + y) * 256] = (3 - pixel) * 63;
                     }
                 }
             }
