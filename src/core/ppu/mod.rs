@@ -1,7 +1,10 @@
 mod sprite;
+mod pixel;
 
 use std::collections::VecDeque;
+use crate::console_print;
 use crate::core::memory::Memory;
+use crate::core::ppu::pixel::Pixel;
 use crate::core::ppu::PPUMode::*;
 use crate::core::ppu::PPUBackgroundFetcherMode::*;
 use crate::core::ppu::sprite::{create_sprite, Sprite};
@@ -22,6 +25,7 @@ pub struct PPU{
     pub cycle_count: usize,
     sprite_buffer: Vec<Sprite>,
     background_fifo: VecDeque<u8>,
+    sprite_fifo: VecDeque<Pixel>,
 
     background_fetcher_mode: PPUBackgroundFetcherMode,
     scx: usize,
@@ -34,6 +38,9 @@ pub struct PPU{
     tile_data_low: u8,
     tile_data_high: u8,
     lcd_x_pos: usize,
+
+    current_sprite: Sprite,
+
     pub frame_buffer: Vec<u8>,
 }
 
@@ -43,6 +50,7 @@ pub fn init_ppu() -> PPU{
         cycle_count: 0,
         sprite_buffer: vec![],
         background_fifo: VecDeque::new(),
+        sprite_fifo: VecDeque::new(),
 
         background_fetcher_mode: FetchTileNumber,
         scx: 0,
@@ -55,6 +63,9 @@ pub fn init_ppu() -> PPU{
         tile_data_low: 0,
         tile_data_high: 0,
         lcd_x_pos: 0,
+
+        current_sprite: create_sprite(0, 0, 0, 0),
+
         frame_buffer: vec![0; 160*144*3],
     };
 }
@@ -73,7 +84,7 @@ impl PPU {
                 let byte_3 = mem.oam[base+2];
                 let byte_4 = mem.oam[base+3];
                 let sprite = create_sprite(byte_1, byte_2, byte_3, byte_4);
-                if self.sprite_buffer.len() < 10 {
+                if self.sprite_buffer.len() < 10 && self.ly + 16 >= sprite.y_pos && self.ly + 16 < sprite.y_pos + 8{
                     self.sprite_buffer.push(sprite);
                 }
 
@@ -93,20 +104,42 @@ impl PPU {
 
                 self.load_ppu_registers(mem);
 
+                // Check for sprite fetch
+                for sprite in self.sprite_buffer.iter_mut(){
+                    if sprite.x_pos <= self.lcd_x_pos + 8{
+                        self.background_fetcher_mode = SpriteFetch;
+                        self.current_sprite = sprite.clone();
+                        sprite.x_pos = 255;
+                        break;
+                    }
+                }
+
                 self.run_ppu_background_fetcher(mem);
 
                 // Run pixel mixer
                 if !self.background_fifo.is_empty(){
-                    let color = self.background_fifo.pop_back().unwrap();
-                    self.draw_pixel(self.lcd_x_pos, self.ly, color);
+                    // Case 1 - Sprite FIFO is empty and Background FIFO contains pixels
+                    if self.sprite_fifo.is_empty() {
+                        let color = self.background_fifo.pop_back().unwrap();
+                        self.draw_pixel(self.lcd_x_pos, self.ly, color);
+
+                    // Case 2 - Sprite FIFO contains pixels and Background FIFO contains pixels
+                    }else{
+                        let bg_color = self.background_fifo.pop_back().unwrap();
+                        let sprite_color = self.sprite_fifo.pop_back().unwrap();
+                        if sprite_color.color == 0 || (sprite_color.obj_priority && bg_color != 0){
+                            self.draw_pixel(self.lcd_x_pos, self.ly, bg_color);
+                        }else{
+                            self.draw_pixel(self.lcd_x_pos, self.ly, sprite_color.color);
+                        }
+                    }
                     self.lcd_x_pos += 1;
                 }
 
                 self.cycle_count += 2;
 
-                // Drawing Mode has a max duration of 289 T-Cycles
-                // if this limit is exceeded, force the PPU to enter H-Blank mode.
-                if self.cycle_count % CYCLES_PER_LINE >= 370 || self.lcd_x_pos >= 160{
+                // Enter H-blank mode after rendering 160 pixels in the scanline
+                if self.lcd_x_pos >= 160{
                     self.ppu_mode = HBlank;
                 }
             },
@@ -119,6 +152,9 @@ impl PPU {
                 if self.cycle_count % CYCLES_PER_LINE == 0{
                     self.ly += 1;
                     mem.io_reg[0x44] = self.ly as u8;
+
+                    // Clear sprite buffer
+                    self.sprite_buffer.clear();
                     // If 144 lines worth of cycles have been completed, enter V-Blank mode
                     // else, enter the next line's OAM scan mode.
                     if self.cycle_count >= CYCLES_UNTIL_VBLANK{
@@ -152,6 +188,20 @@ impl PPU {
 
     fn run_ppu_background_fetcher(&mut self, mem: &mut Memory){
         match self.background_fetcher_mode{
+            SpriteFetch => {
+                let tile_number = self.current_sprite.tile_number;
+                let mut tile_data_low =  mem.read_8bit(0x8000 +((tile_number * 16) + 2 * ((self.ly + self.scy) % 8)));
+                let mut tile_data_high = mem.read_8bit(0x8000 +(((tile_number * 16) + 2 * ((self.ly + self.scy) % 8)) + 1));
+
+                for _ in 0..8{
+                    let pixel = ((tile_data_high & 0x1) << 1) + (tile_data_low & 0x1);
+                    tile_data_low >>= 1;
+                    tile_data_high >>= 1;
+                    self.sprite_fifo.push_back(Pixel{color:pixel, obj_priority: self.current_sprite.obj_to_bg_priority_flag});
+                }
+
+                self.background_fetcher_mode = FetchTileNumber;
+            },
             FetchTileNumber => {
                 let mut tile_address: usize = 0x9800;
                 if self.lcdc & 0x08 != 0{ // Bit 3 of LCDC selects background tile map (0=9800-9BFF, 1=9C00-9FFF)
@@ -211,7 +261,7 @@ impl PPU {
             for tile_x in 0..32 {
                 let tile_num = tile_y*32 + tile_x;
                 for y in 0..8 {
-                    let mut low_byte = mem.read_8bit(tile_num * 16 + 0x8000 + 2 + y*2);
+                    let mut low_byte = mem.read_8bit(tile_num * 16 + 0x8000 + 0 + y*2);
                     let mut high_byte = mem.read_8bit(tile_num * 16 + 0x8000 + 1 + y*2);
 
                     for x in ((tile_x * 8)..(8 * tile_x + 8)).rev() {
@@ -232,5 +282,6 @@ enum PPUBackgroundFetcherMode{
     FetchTileDataLow,
     FetchTileDataHigh,
     PushToFIFO,
+    SpriteFetch,
 }
 

@@ -1,11 +1,12 @@
+#[derive(Clone)]
 pub struct Sprite{
-    y_pos: usize,
-    x_pos: usize,
-    tile_number: usize,
-    obj_to_bg_priority_flag: bool,
-    y_flip_flag: bool,
-    x_flip_flag: bool,
-    palette_number: bool,
+    pub y_pos: usize,
+    pub x_pos: usize,
+    pub tile_number: usize,
+    pub obj_to_bg_priority_flag: bool,
+    pub y_flip_flag: bool,
+    pub x_flip_flag: bool,
+    pub palette_number: bool,
 }
 
 pub fn create_sprite(byte_1: u8, byte_2: u8, byte_3: u8, byte_4: u8) -> Sprite{
