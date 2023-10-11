@@ -2,7 +2,6 @@ mod sprite;
 mod pixel;
 
 use std::collections::VecDeque;
-use crate::console_print;
 use crate::core::memory::Memory;
 use crate::core::ppu::pixel::Pixel;
 use crate::core::ppu::PPUMode::*;
@@ -225,14 +224,26 @@ impl PPU {
         match self.background_fetcher_mode{
             SpriteFetch => {
                 let tile_number = self.current_sprite.tile_number;
-                let mut tile_data_low =  mem.read_8bit(0x8000 +((tile_number * 16) + 2 * ((self.ly + self.scy) % 8)));
-                let mut tile_data_high = mem.read_8bit(0x8000 +(((tile_number * 16) + 2 * ((self.ly + self.scy) % 8)) + 1));
-
-                for _ in 0..8{
-                    let pixel = ((tile_data_high & 0x1) << 1) + (tile_data_low & 0x1);
-                    tile_data_low >>= 1;
-                    tile_data_high >>= 1;
-                    self.sprite_fifo.push_back(Pixel{color:pixel, obj_priority: self.current_sprite.obj_to_bg_priority_flag, palette_num: self.current_sprite.palette_number});
+                let mut y_offset = ((self.ly + self.scy) % 8);
+                if self.current_sprite.y_flip_flag{
+                    y_offset = 7-y_offset;
+                }
+                let mut tile_data_low =  mem.read_8bit(0x8000 +((tile_number * 16) + 2 * y_offset));
+                let mut tile_data_high = mem.read_8bit(0x8001 +((tile_number * 16) + 2 * y_offset));
+                if self.current_sprite.x_flip_flag{
+                    for _ in 0..8 {
+                        let pixel = ((tile_data_high & 0x80) >> 6) + ((tile_data_low & 0x80) >> 7);
+                        tile_data_low <<= 1;
+                        tile_data_high <<= 1;
+                        self.sprite_fifo.push_back(Pixel { color: pixel, obj_priority: self.current_sprite.obj_to_bg_priority_flag, palette_num: self.current_sprite.palette_number });
+                    }
+                }else {
+                    for _ in 0..8 {
+                        let pixel = ((tile_data_high & 0x1) << 1) + (tile_data_low & 0x1);
+                        tile_data_low >>= 1;
+                        tile_data_high >>= 1;
+                        self.sprite_fifo.push_back(Pixel { color: pixel, obj_priority: self.current_sprite.obj_to_bg_priority_flag, palette_num: self.current_sprite.palette_number });
+                    }
                 }
 
                 self.background_fetcher_mode = FetchTileNumber;
