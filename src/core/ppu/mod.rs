@@ -77,12 +77,15 @@ impl PPU {
                     self.sprite_buffer.push(sprite);
                 }
 
-                self.fetcher_x_pos = 0;
+                self.fetcher_x_pos = 0; // reset internal fetcher x counter
                 self.lcd_x_pos = 0;
                 self.cycle_count += 2;
                 // OAM scan lasts 80 T-cycles
                 if self.cycle_count % CYCLES_PER_LINE >= 80{
+                    // Transition to PPU drawing mode
                     self.ppu_mode = Drawing;
+                    // Reset Background Pixel Fetcher
+                    self.background_fetcher_mode = FetchTileNumber;
                 }
             },
             // PPU actively drawing pixels state
@@ -103,7 +106,7 @@ impl PPU {
 
                 // Drawing Mode has a max duration of 289 T-Cycles
                 // if this limit is exceeded, force the PPU to enter H-Blank mode.
-                if self.cycle_count % CYCLES_PER_LINE >= 370{
+                if self.cycle_count % CYCLES_PER_LINE >= 370 || self.lcd_x_pos >= 160{
                     self.ppu_mode = HBlank;
                 }
             },
@@ -155,7 +158,7 @@ impl PPU {
                     tile_address = 0x9C00;
                 }
 
-                let x_offset= self.fetcher_x_pos + (self.scx/8) & 0x1F;
+                let x_offset= (self.fetcher_x_pos + (self.scx/8)) & 0x1F;
                 let y_offset = 32 * (((self.ly + self.scy) & 0xFF) / 8);
 
                 self.tile_number = mem.read_8bit(tile_address + ((x_offset + y_offset) & 0x3FF)) as usize;
@@ -175,11 +178,13 @@ impl PPU {
                         let pixel = ((self.tile_data_high & 0x1) << 1) + (self.tile_data_low & 0x1);
                         self.tile_data_low >>= 1;
                         self.tile_data_high >>= 1;
-                        self.background_fifo.push_front(pixel);
+                        self.background_fifo.push_back(pixel);
                     }
-                    self.background_fetcher_mode = FetchTileNumber;
+
                     self.fetcher_x_pos += 1;
+                    self.background_fetcher_mode = FetchTileNumber;
                 }
+
             },
         }
     }
