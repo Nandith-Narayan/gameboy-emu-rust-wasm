@@ -27,7 +27,7 @@ const runWasm = async() => {
             let b = frame_data[base_addr+2];
 
             ctx.fillStyle = "rgb("+r+", "+g+", "+b+")"; 
-            ctx.fillRect(x * 5, y * 5, 5, 5);
+            ctx.fillRect(x * 4, y * 4, 4, 4);
             
         }
     }

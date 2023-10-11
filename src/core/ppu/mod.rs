@@ -196,7 +196,7 @@ impl PPU {
         self.frame_buffer[base_address+1] = pixel * 60;
         self.frame_buffer[base_address+2] = pixel * 60;
     }
-
+    // Helper function that directly loads ppu-related io-registers from memory
     fn load_ppu_registers(&mut self, mem: &mut Memory){
         self.scx = mem.io_reg[0x43] as usize;
         self.scy = mem.io_reg[0x42] as usize;
