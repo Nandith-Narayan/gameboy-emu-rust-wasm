@@ -211,8 +211,8 @@ impl PPU {
                     finished_frame = true;
                     self.cycle_count %= CYCLES_PER_FRAME;
                 }else{
-                    self.ly += 1;
-                    mem.io_reg[0x44] = self.ly as u8;
+                    //self.ly += 1;
+                    //mem.io_reg[0x44] = self.ly as u8;
                 }
             },
         };

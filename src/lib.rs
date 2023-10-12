@@ -14,7 +14,7 @@ use crate::core::cpu::CPU;
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 lazy_static! {
-    static ref GB_CPU: Mutex<CPU> = Mutex::new(CPU{ reg: [0; 8], pc: 0, sp: 0, mem: core::memory::init_memory(), ppu: core::ppu::init_ppu(), frame_done: false, unique_ops:vec![0]});
+    static ref GB_CPU: Mutex<CPU> = Mutex::new(CPU{ reg: [0; 8], pc: 0, sp: 0, mem: core::memory::init_memory(), ppu: core::ppu::init_ppu(), frame_done: false, unique_ops:vec![0], total_cycles:0});
 }
 
 
@@ -49,8 +49,8 @@ pub fn run_until_frame_end() -> Vec<u8> {
     while !gb_cpu.frame_done{
         gb_cpu.execute();
     }
-    console_print(gb_cpu.mem.debug_string.as_str());
-    console_print("done");
+    //console_print(gb_cpu.mem.debug_string.as_str());
+    //console_print("done");
     //console_print(format!("{:?}", gb_cpu.unique_ops).as_str());
     //alert("Hello, World!");
 

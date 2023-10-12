@@ -14,10 +14,11 @@ impl CPU{
         // Array to convert from index to register name
         let register_list = [B, C, D, E, H, L, HL, A];
         // Read value from either an 8 bit register, or from memory location at address stored in HL
-        let mut value = match register_index{
+        let mut value = match register_list[register_index]{
             HL => self.mem.read_8bit(self.get_hl() as usize),
             r => self.reg[r],
         };
+        //console_print(format!("0xCB {:}", opcode).as_str());
         match opcode{
             0x00..=0x07 => {value = self.rotate_left_circular(value);} // RLC
             0x08..=0x0F => {value = self.rotate_right_circular(value);} // RRC
@@ -34,7 +35,7 @@ impl CPU{
 
 
         // Write value to either an 8 bit register, or to memory location at address stored in HL
-        match register_index{
+        match register_list[register_index]{
             HL => {self.mem.write_8bit(self.get_hl() as usize, value); cycle_count = 16;}
             r => {self.reg[r] = value;}
         };
@@ -78,7 +79,7 @@ impl CPU{
     }
 
     pub fn shift_right_logical(&mut self, value: u8) -> u8{
-        let result = value >> 1;
+        let result = (value >> 1)&0x7F;
         if value & 0x01 !=0{
             self.set_carry_flag();
         }else{

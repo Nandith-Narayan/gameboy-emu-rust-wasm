@@ -11,11 +11,12 @@ await init("./pkg/gameboy_emu_wasm_bg.wasm");
 
 let ctx = document.getElementById("canvas").getContext("2d");
 let ctx_bg = document.getElementById("background-map-canvas").getContext("2d");
-
 const runWasm = async() => {
     // Force 60 fps, even if monitor renders at a higher fps
     setTimeout(function () {
+
         requestAnimationFrame(runWasm);
+
 
         let frame_data = run_until_frame_end();
 

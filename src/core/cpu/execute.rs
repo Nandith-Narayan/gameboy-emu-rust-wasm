@@ -8,7 +8,7 @@ impl CPU{
     pub fn execute(&mut self) -> usize{
         // Fetch instruction
         let opcode = self.mem.read_8bit(self.pc);
-        //console_print(format!("A: {:02X} F: {:02X} B: {:02X} C: {:02X} D: {:02X} E: {:02X} H: {:02X} L: {:02X} SP: {:04X} PC: 00:{:04X} {:#04X}", self.reg[A], self.reg[F], self.reg[B], self.reg[C], self.reg[D], self.reg[E], self.reg[H], self.reg[L],self.sp, self.pc, opcode).as_str());
+        //console_print(format!("A: {:02X} F: {:02X} B: {:02X} C: {:02X} D: {:02X} E: {:02X} H: {:02X} L: {:02X} SP: {:04X} PC: 00:{:04X} ({:02X} {:02X} {:02X} {:02X}) LY: {} Cycles: {}", self.reg[A], self.reg[F], self.reg[B], self.reg[C], self.reg[D], self.reg[E], self.reg[H], self.reg[L],self.sp, self.pc, self.mem.read_8bit(self.pc), self.mem.read_8bit(self.pc+1),self.mem.read_8bit(self.pc+2),self.mem.read_8bit(self.pc+3),self.mem.read_8bit(0xFF44), self.total_cycles).as_str());
         if !self.unique_ops.contains(&opcode){
             self.unique_ops.push(opcode);
         }
@@ -81,8 +81,8 @@ impl CPU{
             0x7C => {self.reg[A] = self.reg[H]; self.pc+=1; 4} // LD A, H
             0x7D => {self.reg[A] = self.reg[L]; self.pc+=1; 4} // LD A, L
             0x47 => {self.reg[B] = self.reg[A]; self.pc+=1; 4} // LD B, A
-            0x57 => {self.reg[A] = self.reg[A]; self.pc+=1; 4} // LD D, A
-            0x67 => {self.reg[A] = self.reg[A]; self.pc+=1; 4} // LD H, A
+            0x57 => {self.reg[D] = self.reg[A]; self.pc+=1; 4} // LD D, A
+            0x67 => {self.reg[H] = self.reg[A]; self.pc+=1; 4} // LD H, A
             0x4F => {self.reg[C] = self.reg[A]; self.pc+=1; 4} // LD C, A
             0x5F => {self.reg[E] = self.reg[A]; self.pc+=1; 4} // LD E, A
             0x6F => {self.reg[L] = self.reg[A]; self.pc+=1; 4} // LD L, A
@@ -140,7 +140,7 @@ impl CPU{
             0x34 => {let mut value = self.mem.read_8bit(self.get_hl() as usize); value = value.wrapping_add(1); self.clear_sub_flag(); if value == 0{self.set_zero_flag();}else{self.clear_zero_flag();}; self.pc+=1; if value & 0xF == 0x0{self.set_half_carry_flag()}else{self.clear_half_carry_flag()}; self.mem.write_8bit(self.get_hl() as usize, value); 12} // INC (HL)
             0x0C => {self.reg[C] = self.reg[C].wrapping_add(1); self.clear_sub_flag(); if self.reg[C] == 0{self.set_zero_flag();}else{self.clear_zero_flag();}; self.pc+=1; if self.reg[C] & 0xF == 0x0{self.set_half_carry_flag()}else{self.clear_half_carry_flag()}; 4} // INC C
             0x1C => {self.reg[E] = self.reg[E].wrapping_add(1); self.clear_sub_flag(); if self.reg[E] == 0{self.set_zero_flag();}else{self.clear_zero_flag();}; self.pc+=1; if self.reg[E] & 0xF == 0x0{self.set_half_carry_flag()}else{self.clear_half_carry_flag()}; 4} // INC E
-            0x2C => {self.reg[L] = self.reg[L].wrapping_add(1); self.clear_sub_flag(); if self.reg[C] == 0{self.set_zero_flag();}else{self.clear_zero_flag();}; self.pc+=1; if self.reg[C] & 0xF == 0x0{self.set_half_carry_flag()}else{self.clear_half_carry_flag()}; 4} // LNC C
+            0x2C => {self.reg[L] = self.reg[L].wrapping_add(1); self.clear_sub_flag(); if self.reg[L] == 0{self.set_zero_flag();}else{self.clear_zero_flag();}; self.pc+=1; if self.reg[L] & 0xF == 0x0{self.set_half_carry_flag()}else{self.clear_half_carry_flag()}; 4} // LNC L
             0x3C => {self.reg[A] = self.reg[A].wrapping_add(1); self.clear_sub_flag(); if self.reg[A] == 0{self.set_zero_flag();}else{self.clear_zero_flag();}; self.pc+=1; if self.reg[A] & 0xF == 0x0{self.set_half_carry_flag()}else{self.clear_half_carry_flag()}; 4} // LNC A
             0x05 => {self.reg[B] = self.reg[B].wrapping_sub(1); self.set_sub_flag(); if self.reg[B] == 0{self.set_zero_flag();}else{self.clear_zero_flag();}; self.pc+=1; if self.reg[B] & 0xF == 0xF{self.set_half_carry_flag()}else{self.clear_half_carry_flag()}; 4} // DEC B
             0x15 => {self.reg[D] = self.reg[D].wrapping_sub(1); self.set_sub_flag(); if self.reg[D] == 0{self.set_zero_flag();}else{self.clear_zero_flag();}; self.pc+=1; if self.reg[D] & 0xF == 0xF{self.set_half_carry_flag()}else{self.clear_half_carry_flag()}; 4} // DEC D
@@ -270,7 +270,7 @@ impl CPU{
         for _ in 0..(cycle_count/2) {
             self.frame_done |= self.ppu.run_ppu_cycle(&mut self.mem);
         }
-
+        self.total_cycles += cycle_count as u64;
         return cycle_count;
     }
 

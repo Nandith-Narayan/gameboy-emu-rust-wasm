@@ -14,6 +14,8 @@ pub struct CPU{
     pub ppu: PPU,
     pub frame_done: bool,
     pub unique_ops: Vec<u8>,
+
+    pub total_cycles: u64,
 }
 
 impl CPU{
@@ -26,12 +28,13 @@ impl CPU{
         self.reg[H] = 0x1;
         self.reg[L] = 0x4D;
         self.reg[F] = 0xB0;
-        self.pc = 0x101;
+        self.pc = 0x100;
         self.sp = 0xFFFE;
         self.mem = init_memory();
         self.ppu = init_ppu();
         self.frame_done = false;
         self.unique_ops = vec![];
+        self.total_cycles = 0;
     }
 
     // Helper functions to read and write 16-Bit registers
@@ -43,7 +46,7 @@ impl CPU{
         self.reg[L] = (value & 0x0FF) as u8;
     }
     pub fn get_bc(&self) -> u16{
-        return ((self.reg[B] as u16)<<8).wrapping_add(self.reg[C] as u16);
+        return ((self.reg[B] as u16)<<8) + (self.reg[C] as u16);
     }
     pub fn set_bc(&mut self, value: u16){
         self.reg[B] = ((value >> 8) & 0x0FF) as u8;
@@ -174,7 +177,7 @@ impl CPU{
             self.clear_half_carry_flag();
         }
 
-        if ((a as u16) ^ (b as u16) ^ ((a as u16).wrapping_sub(b as u16))) & 0x100 == 0x100{
+        if ((a as u16) ^ (b as u16) ^ ((a as u16).wrapping_add(b as u16))) & 0x100 == 0x100{
             self.set_carry_flag();
         }else{
             self.clear_carry_flag();
