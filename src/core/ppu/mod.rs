@@ -305,9 +305,9 @@ impl PPU {
     fn draw_pixel(&mut self, x: usize, y: usize, color: u8){
         let base_address = (x + (y * 160)) * 3;
         let pixel = 3 - color;
-        self.frame_buffer[base_address] = pixel * 63;
-        self.frame_buffer[base_address+1] = pixel * 63;
-        self.frame_buffer[base_address+2] = pixel * 63;
+        self.frame_buffer[base_address] = pixel * 85;
+        self.frame_buffer[base_address+1] = pixel * 85;
+        self.frame_buffer[base_address+2] = pixel * 85;
     }
     // Helper function that directly loads ppu-related io-registers from memory
     fn load_ppu_registers(&mut self, mem: &mut Memory){
@@ -341,7 +341,7 @@ impl PPU {
                         let pixel = ((high_byte & 0x1) << 1) + (low_byte & 0x1);
                         low_byte >>= 1;
                         high_byte >>= 1;
-                        debug_frame[(x) + (tile_y * 8 + y) * 256] = (3 - pixel) * 63;
+                        debug_frame[(x) + (tile_y * 8 + y) * 256] = (3 - pixel) * 85;
                     }
                 }
             }

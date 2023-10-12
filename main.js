@@ -19,7 +19,7 @@ const runWasm = async() => {
 
 
         let frame_data = run_until_frame_end();
-
+        
         for (let y = 0; y < 144; y++) {
             for (let x = 0; x < 160; x++) {
 

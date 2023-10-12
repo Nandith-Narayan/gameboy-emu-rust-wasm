@@ -194,6 +194,8 @@ impl CPU{
             0x93 => {self.reg[A] = self.sub_and_set_flags(self.reg[A], self.reg[E]); self.pc+=1; 4} // SUB E
             0x94 => {self.reg[A] = self.sub_and_set_flags(self.reg[A], self.reg[H]); self.pc+=1; 4} // SUB H
             0x95 => {self.reg[A] = self.sub_and_set_flags(self.reg[A], self.reg[L]); self.pc+=1; 4} // SUB L
+
+            0x97 => {self.reg[A] = self.sub_and_set_flags(self.reg[A], self.reg[A]); self.pc+=1; 4} // SUB A
             0xD6 => {self.reg[A] = self.sub_and_set_flags(self.reg[A], self.mem.read_8bit(self.pc+1)); self.pc+=2; 8} // SUB d8
 
             // Addition
