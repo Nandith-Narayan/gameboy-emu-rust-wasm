@@ -27,7 +27,7 @@ impl Memory{
             // Set RAM Bank or ROM Bank upper bits
             0x4000..=0x5FFF =>{
                 match self.bank_mode{
-                    BankingMode::ROM => {self.rom_bank |= (value & 0x0E0) as usize;},
+                    BankingMode::ROM => {self.rom_bank |= (value & 0x060) as usize;},
                     BankingMode::RAM => {self.ram_bank = value as usize;}
                 };
             },

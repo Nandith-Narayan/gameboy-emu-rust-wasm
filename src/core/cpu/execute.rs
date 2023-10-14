@@ -199,7 +199,7 @@ impl CPU{
             0x93 => {self.reg[A] = self.sub_and_set_flags(self.reg[A], self.reg[E]); self.pc+=1; 4} // SUB E
             0x94 => {self.reg[A] = self.sub_and_set_flags(self.reg[A], self.reg[H]); self.pc+=1; 4} // SUB H
             0x95 => {self.reg[A] = self.sub_and_set_flags(self.reg[A], self.reg[L]); self.pc+=1; 4} // SUB L
-
+            0x96 => {self.reg[A] = self.sub_and_set_flags(self.reg[A], self.mem.read_8bit(self.get_hl() as usize)); self.pc+=1; 8} // SUB (HL)
             0x97 => {self.reg[A] = self.sub_and_set_flags(self.reg[A], self.reg[A]); self.pc+=1; 4} // SUB A
             0x98 => {self.reg[A] = self.sub_with_carry_and_set_flags(self.reg[A], self.reg[B]); self.pc+=1; 4} // SUBC B
             0x99 => {self.reg[A] = self.sub_with_carry_and_set_flags(self.reg[A], self.reg[C]); self.pc+=1; 4} // SUBC C
@@ -207,7 +207,7 @@ impl CPU{
             0x9B => {self.reg[A] = self.sub_with_carry_and_set_flags(self.reg[A], self.reg[E]); self.pc+=1; 4} // SUBC E
             0x9C => {self.reg[A] = self.sub_with_carry_and_set_flags(self.reg[A], self.reg[H]); self.pc+=1; 4} // SUBC H
             0x9D => {self.reg[A] = self.sub_with_carry_and_set_flags(self.reg[A], self.reg[L]); self.pc+=1; 4} // SUBC L
-
+            0x9E => {self.reg[A] = self.sub_with_carry_and_set_flags(self.reg[A], self.mem.read_8bit(self.get_hl() as usize)); self.pc+=1; 8} // SUBC (HL)
             0x9F => {self.reg[A] = self.sub_with_carry_and_set_flags(self.reg[A], self.reg[A]); self.pc+=1; 4} // SUBC A
             0xD6 => {self.reg[A] = self.sub_and_set_flags(self.reg[A], self.mem.read_8bit(self.pc+1)); self.pc+=2; 8} // SUB d8
             0xDE => {self.reg[A] = self.sub_with_carry_and_set_flags(self.reg[A], self.mem.read_8bit(self.pc+1)); self.pc+=2; 8} // SUBC d8
@@ -219,6 +219,7 @@ impl CPU{
             0x83 => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[E]); self.pc+=1; 4} // ADD E
             0x84 => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[H]); self.pc+=1; 4} // ADD H
             0x85 => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[L]); self.pc+=1; 4} // ADD L
+            0x86 => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.mem.read_8bit(self.get_hl() as usize)); self.pc+=1; 8} // ADD (HL)
             0x87 => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[A]); self.pc+=1; 4} // ADD A
             0xC6 => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.mem.read_8bit(self.pc+1)); self.pc+=2; 8} // ADD d8
             0x88 => {self.reg[A] = self.add_with_carry_and_set_flags(self.reg[A], self.reg[B]); self.pc+=1; 4} // ADC B
@@ -227,6 +228,7 @@ impl CPU{
             0x8B => {self.reg[A] = self.add_with_carry_and_set_flags(self.reg[A], self.reg[E]); self.pc+=1; 4} // ADC E
             0x8C => {self.reg[A] = self.add_with_carry_and_set_flags(self.reg[A], self.reg[H]); self.pc+=1; 4} // ADC H
             0x8D => {self.reg[A] = self.add_with_carry_and_set_flags(self.reg[A], self.reg[L]); self.pc+=1; 4} // ADC L
+            0x8E => {self.reg[A] = self.add_with_carry_and_set_flags(self.reg[A], self.mem.read_8bit(self.get_hl() as usize)); self.pc+=1; 8} // ADC (HL)
             0x8F => {self.reg[A] = self.add_with_carry_and_set_flags(self.reg[A], self.reg[A]); self.pc+=1; 4} // ADC A
             0xCE => {self.reg[A] = self.add_with_carry_and_set_flags(self.reg[A], self.mem.read_8bit(self.pc+1)); self.pc+=2; 8} // ADC d8
 
@@ -237,6 +239,7 @@ impl CPU{
             0xBB => {self.sub_and_set_flags(self.reg[A], self.reg[E]); self.pc+=1; 4} // CP E
             0xBC => {self.sub_and_set_flags(self.reg[A], self.reg[H]); self.pc+=1; 4} // CP H
             0xBD => {self.sub_and_set_flags(self.reg[A], self.reg[L]); self.pc+=1; 4} // CP L
+            0xBE => {self.sub_and_set_flags(self.reg[A], self.mem.read_8bit(self.get_hl() as usize)); self.pc+=1; 8} // CP (HL)
             0xBF => {self.sub_and_set_flags(self.reg[A], self.reg[A]); self.pc+=1; 4} // CP A
             0xFE => {self.sub_and_set_flags(self.reg[A], self.mem.read_8bit(self.pc+1)); self.pc+=2; 8} // CP d8
 

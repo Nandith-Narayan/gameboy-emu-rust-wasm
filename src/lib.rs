@@ -32,7 +32,7 @@ pub fn initialize_rom(rom: Vec<u8>) {
     let mut gb_cpu = GB_CPU.lock().unwrap();
     gb_cpu.init();
 
-    gb_cpu.mem.rom = vec![0; 0x40000];
+    gb_cpu.mem.rom = vec![0; 0x40000*16];
 
     // Load ROM data into memory
     for i in 0..rom.len(){
