@@ -24,8 +24,8 @@ impl CPU{
             0x08..=0x0F => {value = self.rotate_right_circular(value);} // RRC
             0x10..=0x17 => {value = self.rotate_left(value);} // RL
             0x18..=0x1F => {value = self.rotate_right(value);} // RR
-            0x20..=0x27 => {console_print(format!("SLA").as_str());} // SLA
-            0x28..=0x2F => {console_print(format!("SRA").as_str());} // SRA
+            0x20..=0x27 => {value = self.shift_left_arithmetic(value);} // SLA
+            0x28..=0x2F => {value = self.shift_right_arithmetic(value);} // SRA
             0x30..=0x37 => {value = self.swap(value);} // SWAP
             0x38..=0x3F => {value = self.shift_right_logical(value);} // SRL
             0x40..=0x7F => {let bit_index = ((opcode&0x8) >> 3) + ((opcode&0x30) >> 3); self.test_bit(bit_index, value);} // BIT
@@ -67,6 +67,46 @@ impl CPU{
         let result = ((value & 0xF) << 4) + ((value & 0xF0) >> 4);
 
         self.clear_carry_flag();
+        if result == 0{
+            self.set_zero_flag();
+        }else{
+            self.clear_zero_flag();
+        }
+        self.clear_sub_flag();
+        self.clear_half_carry_flag();
+
+        return result;
+    }
+
+    pub fn shift_left_arithmetic(&mut self, value: u8) -> u8{
+        let result = (value << 1)&0xFE;
+        if value & 0x80 !=0{
+            self.set_carry_flag();
+        }else{
+            self.clear_carry_flag();
+        }
+        if result == 0{
+            self.set_zero_flag();
+        }else{
+            self.clear_zero_flag();
+        }
+        self.clear_sub_flag();
+        self.clear_half_carry_flag();
+
+        return result;
+    }
+
+    pub fn shift_right_arithmetic(&mut self, value: u8) -> u8{
+        let mut result = (value >> 1)&0x7F;
+
+        if value & 0x80 !=0{
+            result |= 0x80;
+        }
+        if value & 0x01 !=0{
+            self.set_carry_flag();
+        }else{
+            self.clear_carry_flag();
+        }
         if result == 0{
             self.set_zero_flag();
         }else{
