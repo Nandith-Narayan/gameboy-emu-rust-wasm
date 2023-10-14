@@ -159,6 +159,33 @@ impl CPU{
 
         return result;
     }
+    pub fn sub_with_carry_and_set_flags(&mut self, a: u8, b: u8) -> u8{
+        let carry_val = if self.is_carry_flag_set(){1}else{0};
+        let result = a.wrapping_sub(b).wrapping_sub(carry_val);
+
+        if result == 0{
+            self.set_zero_flag();
+        }else{
+            self.clear_zero_flag();
+        }
+
+        self.set_sub_flag();
+
+        if (a ^ b ^ result ^ carry_val) & 0x10 == 0x10{
+            self.set_half_carry_flag();
+        }else{
+            self.clear_half_carry_flag();
+        }
+
+        if ((a as u16) ^ (b as u16) ^ (carry_val as u16) ^ ((a as u16).wrapping_sub(b as u16).wrapping_sub(carry_val as u16))) & 0x100 == 0x100{
+            self.set_carry_flag();
+        }else{
+            self.clear_carry_flag();
+        }
+
+
+        return result;
+    }
     pub fn add_and_set_flags(&mut self, a: u8, b: u8) -> u8{
 
         let result = a.wrapping_add(b);

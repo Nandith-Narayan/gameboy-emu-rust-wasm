@@ -196,7 +196,16 @@ impl CPU{
             0x95 => {self.reg[A] = self.sub_and_set_flags(self.reg[A], self.reg[L]); self.pc+=1; 4} // SUB L
 
             0x97 => {self.reg[A] = self.sub_and_set_flags(self.reg[A], self.reg[A]); self.pc+=1; 4} // SUB A
+            0x98 => {self.reg[A] = self.sub_with_carry_and_set_flags(self.reg[A], self.reg[B]); self.pc+=1; 4} // SUBC B
+            0x99 => {self.reg[A] = self.sub_with_carry_and_set_flags(self.reg[A], self.reg[C]); self.pc+=1; 4} // SUBC C
+            0x9A => {self.reg[A] = self.sub_with_carry_and_set_flags(self.reg[A], self.reg[D]); self.pc+=1; 4} // SUBC D
+            0x9B => {self.reg[A] = self.sub_with_carry_and_set_flags(self.reg[A], self.reg[E]); self.pc+=1; 4} // SUBC E
+            0x9C => {self.reg[A] = self.sub_with_carry_and_set_flags(self.reg[A], self.reg[H]); self.pc+=1; 4} // SUBC H
+            0x9D => {self.reg[A] = self.sub_with_carry_and_set_flags(self.reg[A], self.reg[L]); self.pc+=1; 4} // SUBC L
+
+            0x9F => {self.reg[A] = self.sub_with_carry_and_set_flags(self.reg[A], self.reg[A]); self.pc+=1; 4} // SUBC A
             0xD6 => {self.reg[A] = self.sub_and_set_flags(self.reg[A], self.mem.read_8bit(self.pc+1)); self.pc+=2; 8} // SUB d8
+            0xDE => {self.reg[A] = self.sub_with_carry_and_set_flags(self.reg[A], self.mem.read_8bit(self.pc+1)); self.pc+=2; 8} // SUBC d8
 
             // Addition
             0x80 => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[B]); self.pc+=1; 4} // ADD B
