@@ -115,9 +115,11 @@ impl CPU{
             0x11 => {let val = self.mem.read_16bit(self.pc + 1); self.set_de(val); self.pc+=3; 12} // LD DE, d16
             0x21 => {let val = self.mem.read_16bit(self.pc + 1); self.set_hl(val); self.pc+=3; 12} // LD HL, d16
             0x31 => {let val = self.mem.read_16bit(self.pc + 1); self.sp = val as usize; self.pc+=3; 12} // LD SP, d16
+            0xF9 => {let val = self.get_hl(); self.sp = val as usize; self.pc+=1; 8} // LD SP, HL
 
             // 16 Bit register stores
             0xEA => {let val = self.mem.read_16bit(self.pc + 1); self.mem.write_8bit(val as usize, self.reg[A]); self.pc+=3; 16} // LD (a16), A
+            0x08 => {let val = self.mem.read_16bit(self.pc + 1); self.mem.write_8bit(val as usize, (self.sp & 0xFF) as u8); self.mem.write_8bit((val+1) as usize, ((self.sp & 0xFF00)>>8) as u8);self.pc+=3; 20} // LD (a16), SP
 
             // 16 Bit register operations
             0x03 => {self.inc_bc(); self.pc+=1; 8} // INC BC
@@ -126,8 +128,8 @@ impl CPU{
             0x0B => {self.dec_bc(); self.pc+=1; 8} // DEC BC
             0x1B => {self.dec_de(); self.pc+=1; 8} // DEC DE
             0x2B => {self.dec_hl(); self.pc+=1; 8} // DEC HL
-            0x33 => {self.sp+=1; self.pc+=1; 8} // INC SP
-            0x3B => {self.sp-=1; self.pc+=1; 8} // DEC SP
+            0x33 => {self.sp = self.sp.wrapping_add(1); self.pc+=1; 8} // INC SP
+            0x3B => {self.sp = self.sp.wrapping_sub(1)/* TO DO: self.sp -= 1 Underflow detection*/; self.pc+=1; 8} // DEC SP
             0x09 => {self.add_to_hl_and_set_flags(self.get_bc()); self.pc+=1; 8} // ADD HL, BC
             0x19 => {self.add_to_hl_and_set_flags(self.get_de()); self.pc+=1; 8} // ADD HL, DE
             0x29 => {self.add_to_hl_and_set_flags(self.get_hl()); self.pc+=1; 8} // ADD HL, HL
