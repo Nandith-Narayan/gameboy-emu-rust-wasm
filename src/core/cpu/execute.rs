@@ -148,7 +148,7 @@ impl CPU{
             0x35 => {let mut value = self.mem.read_8bit(self.get_hl() as usize); value = value.wrapping_sub(1); self.set_sub_flag(); if value == 0{self.set_zero_flag();}else{self.clear_zero_flag();}; self.pc+=1; if value & 0xF == 0xF{self.set_half_carry_flag()}else{self.clear_half_carry_flag()}; self.mem.write_8bit(self.get_hl() as usize, value); 12} // DEC (HL)
             0x0D => {self.reg[C] = self.reg[C].wrapping_sub(1); self.set_sub_flag(); if self.reg[C] == 0{self.set_zero_flag();}else{self.clear_zero_flag();}; self.pc+=1; if self.reg[C] & 0xF == 0xF{self.set_half_carry_flag()}else{self.clear_half_carry_flag()}; 4} // DEC C
             0x1D => {self.reg[E] = self.reg[E].wrapping_sub(1); self.set_sub_flag(); if self.reg[E] == 0{self.set_zero_flag();}else{self.clear_zero_flag();}; self.pc+=1; if self.reg[E] & 0xF == 0xF{self.set_half_carry_flag()}else{self.clear_half_carry_flag()}; 4} // DEC E
-            0x2D => {self.reg[L] = self.reg[L].wrapping_sub(1); self.set_sub_flag(); if self.reg[C] == 0{self.set_zero_flag();}else{self.clear_zero_flag();}; self.pc+=1; if self.reg[C] & 0xF == 0xF{self.set_half_carry_flag()}else{self.clear_half_carry_flag()}; 4} // DEC C
+            0x2D => {self.reg[L] = self.reg[L].wrapping_sub(1); self.set_sub_flag(); if self.reg[L] == 0{self.set_zero_flag();}else{self.clear_zero_flag();}; self.pc+=1; if self.reg[L] & 0xF == 0xF{self.set_half_carry_flag()}else{self.clear_half_carry_flag()}; 4} // DEC L
             0x3D => {self.reg[A] = self.reg[A].wrapping_sub(1); self.set_sub_flag(); if self.reg[A] == 0{self.set_zero_flag();}else{self.clear_zero_flag();}; self.pc+=1; if self.reg[A] & 0xF == 0xF{self.set_half_carry_flag()}else{self.clear_half_carry_flag()}; 4} // DEC A
 
             // Jumps
