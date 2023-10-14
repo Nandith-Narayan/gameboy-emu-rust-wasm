@@ -15,6 +15,9 @@ pub struct Memory{
     ram_bank: usize,
     bank_mode: BankingMode,
 
+    pub interrupt_enable: u8,
+    pub interrupt_request: u8,
+
     pub debug_string: String,
 }
 
@@ -31,6 +34,9 @@ pub fn init_memory() -> Memory{
         ram_bank: 1,
         bank_mode: BankingMode::ROM,
         debug_string: "".to_string(),
+        interrupt_enable: 0,
+        interrupt_request: 0,
+
     };
 }
 
@@ -46,11 +52,14 @@ impl Memory {
             0xD000..=0xDFFF => {self.wram[address-0xC000]},
             // Object Attribute Memory
             0xFE00..=0xFE9F => {self.oam[address-0xFE00]},
+            // Interrupt Request
+            0xFF0F => {self.interrupt_request},
             // IO Registers
             0xFF00..=0xFF7F => {self.io_reg[address-0xFF00]},
             // High RAM
             0xFF80..=0xFFFE => {self.hram[address-0xFF80]},
-
+            // Interrupt Enable
+            0xFFFF => {self.interrupt_enable}
             // MBC mapped memory
             _ => {self.read_8bit_mbc1(address)}
         };
@@ -66,6 +75,8 @@ impl Memory {
             0xD000..=0xDFFF => {self.wram[address-0xC000] = value;},
             // Object Attribute Memory
             0xFE00..=0xFE9F => {self.oam[address-0xFE00] = value;},
+            // Interrupt Request
+            0xFF0F => {self.interrupt_request = value;}
             // IO Registers
             0xFF00..=0xFF7F => {self.io_reg[address-0xFF00] = value;
                 //console_print(format!("{:#06X} {:#04X}", address, value).as_str());
@@ -76,7 +87,8 @@ impl Memory {
             },
             // High RAM
             0xFF80..=0xFFFE => {self.hram[address-0xFF80] = value;},
-
+            // Interrupt Enable
+            0xFFFF => {self.interrupt_enable = value;}
             // MBC mapped memory
             _ => {self.write_8bit_mbc1(address, value);}
         };

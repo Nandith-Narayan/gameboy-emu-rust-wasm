@@ -6,12 +6,19 @@ use crate::core::cpu::CPU;
 impl CPU{
     // Executes the next instruction and returns number of CPU cycles executed
     pub fn execute(&mut self) -> usize{
+
+        // Handle interrupts
+        if self.interrupt_master_enable {
+            self.handle_interrupts();
+        }
+
         // Fetch instruction
         let opcode = self.mem.read_8bit(self.pc);
+
         //console_print(format!("A: {:02X} F: {:02X} B: {:02X} C: {:02X} D: {:02X} E: {:02X} H: {:02X} L: {:02X} SP: {:04X} PC: 00:{:04X} ({:02X} {:02X} {:02X} {:02X}) LY: {} Cycles: {}", self.reg[A], self.reg[F], self.reg[B], self.reg[C], self.reg[D], self.reg[E], self.reg[H], self.reg[L],self.sp, self.pc, self.mem.read_8bit(self.pc), self.mem.read_8bit(self.pc+1),self.mem.read_8bit(self.pc+2),self.mem.read_8bit(self.pc+3),self.mem.read_8bit(0xFF44), self.total_cycles).as_str());
-        if !self.unique_ops.contains(&opcode){
+        /*if !self.unique_ops.contains(&opcode){
             self.unique_ops.push(opcode);
-        }
+        }*/
 
         let cycle_count: usize = match opcode{
             // Special
