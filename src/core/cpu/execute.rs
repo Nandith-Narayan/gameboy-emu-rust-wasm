@@ -116,6 +116,9 @@ impl CPU{
             0x21 => {let val = self.mem.read_16bit(self.pc + 1); self.set_hl(val); self.pc+=3; 12} // LD HL, d16
             0x31 => {let val = self.mem.read_16bit(self.pc + 1); self.sp = val as usize; self.pc+=3; 12} // LD SP, d16
             0xF9 => {let val = self.get_hl(); self.sp = val as usize; self.pc+=1; 8} // LD SP, HL
+            0xE8 => {self.sp_plus_r8(); self.pc+=2; 16} // LD SP, r8
+            0xF8 => {self.load_hl_with_sp_plus_r8(); self.pc+=2; 12} // LD HL, SP+r8
+
 
             // 16 Bit register stores
             0xEA => {let val = self.mem.read_16bit(self.pc + 1); self.mem.write_8bit(val as usize, self.reg[A]); self.pc+=3; 16} // LD (a16), A

@@ -282,6 +282,48 @@ impl CPU{
         }
         self.clear_half_carry_flag();
     }
+    fn load_hl_with_sp_plus_r8(&mut self){
+        let val = self.mem.read_8bit(self.pc + 1) as i8;
+
+
+        // Compute carry and half-carry flags
+        if ((self.sp & 0xFF) + ((val as usize) & 0xFF)) & 0x100 != 0{
+            self.set_carry_flag();
+        }else{
+            self.clear_carry_flag();
+        }
+        if ((self.sp & 0xF) + ((val as usize) & 0xF)) & 0x10 != 0{
+            self.set_half_carry_flag();
+        }else{
+            self.clear_half_carry_flag();
+        }
+
+        self.set_hl((self.sp as i32 + (val as i32)) as u16);
+
+        self.clear_zero_flag();
+        self.clear_sub_flag();
+    }
+    fn sp_plus_r8(&mut self){
+        let val = self.mem.read_8bit(self.pc + 1) as i8;
+
+
+        // Compute carry and half-carry flags
+        if ((self.sp & 0xFF) + ((val as usize) & 0xFF)) & 0x100 != 0{
+            self.set_carry_flag();
+        }else{
+           self.clear_carry_flag();
+        }
+        if ((self.sp & 0xF) + ((val as usize) & 0xF)) & 0x10 != 0{
+            self.set_half_carry_flag();
+        }else{
+            self.clear_half_carry_flag();
+        }
+
+        self.sp = (self.sp as i32 + val as i32) as usize;
+
+        self.clear_zero_flag();
+        self.clear_sub_flag();
+    }
     pub fn render_background_tile_data(&mut self) -> Vec<u8>{
         return self.ppu.render_background_tile_data(&mut self.mem);
     }
