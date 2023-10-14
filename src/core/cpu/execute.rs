@@ -207,14 +207,14 @@ impl CPU{
             0x85 => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[L]); self.pc+=1; 4} // ADD L
             0x87 => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[A]); self.pc+=1; 4} // ADD A
             0xC6 => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.mem.read_8bit(self.pc+1)); self.pc+=2; 8} // ADD d8
-            0x88 => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[B].wrapping_add(if self.is_carry_flag_set(){1}else{0})); self.pc+=1; 4} // ADC B
-            0x89 => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[C].wrapping_add(if self.is_carry_flag_set(){1}else{0})); self.pc+=1; 4} // ADC C
-            0x8A => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[D].wrapping_add(if self.is_carry_flag_set(){1}else{0})); self.pc+=1; 4} // ADC D
-            0x8B => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[E].wrapping_add(if self.is_carry_flag_set(){1}else{0})); self.pc+=1; 4} // ADC E
-            0x8C => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[H].wrapping_add(if self.is_carry_flag_set(){1}else{0})); self.pc+=1; 4} // ADC H
-            0x8D => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[L].wrapping_add(if self.is_carry_flag_set(){1}else{0})); self.pc+=1; 4} // ADC L
-            0x8F => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.reg[A].wrapping_add(if self.is_carry_flag_set(){1}else{0})); self.pc+=1; 4} // ADC A
-            0xCE => {self.reg[A] = self.add_and_set_flags(self.reg[A], self.mem.read_8bit(self.pc+1).wrapping_add(if self.is_carry_flag_set(){1}else{0})); self.pc+=2; 8} // ADC d8
+            0x88 => {self.reg[A] = self.add_with_carry_and_set_flags(self.reg[A], self.reg[B]); self.pc+=1; 4} // ADC B
+            0x89 => {self.reg[A] = self.add_with_carry_and_set_flags(self.reg[A], self.reg[C]); self.pc+=1; 4} // ADC C
+            0x8A => {self.reg[A] = self.add_with_carry_and_set_flags(self.reg[A], self.reg[D]); self.pc+=1; 4} // ADC D
+            0x8B => {self.reg[A] = self.add_with_carry_and_set_flags(self.reg[A], self.reg[E]); self.pc+=1; 4} // ADC E
+            0x8C => {self.reg[A] = self.add_with_carry_and_set_flags(self.reg[A], self.reg[H]); self.pc+=1; 4} // ADC H
+            0x8D => {self.reg[A] = self.add_with_carry_and_set_flags(self.reg[A], self.reg[L]); self.pc+=1; 4} // ADC L
+            0x8F => {self.reg[A] = self.add_with_carry_and_set_flags(self.reg[A], self.reg[A]); self.pc+=1; 4} // ADC A
+            0xCE => {self.reg[A] = self.add_with_carry_and_set_flags(self.reg[A], self.mem.read_8bit(self.pc+1)); self.pc+=2; 8} // ADC d8
 
             // Compare
             0xB8 => {self.sub_and_set_flags(self.reg[A], self.reg[B]); self.pc+=1; 4} // CP B

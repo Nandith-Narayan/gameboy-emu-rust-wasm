@@ -106,6 +106,9 @@ impl PPU {
                 self.cycle_count += 2;
                 // OAM scan lasts 80 T-cycles
                 if self.cycle_count % CYCLES_PER_LINE >= 80{
+                    // Sort Sprites
+                    self.sprite_buffer.sort_by(|a, b| b.x_pos.cmp(&a.x_pos));
+
                     // Transition to PPU drawing mode
                     self.ppu_mode = Drawing;
                     // Reset Background Pixel Fetcher
