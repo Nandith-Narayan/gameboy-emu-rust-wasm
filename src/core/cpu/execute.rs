@@ -32,8 +32,8 @@ impl CPU{
             0x2F => {self.reg[A] = self.reg[A] ^ 0xFF; self.set_sub_flag(); self.set_half_carry_flag(); self.pc+=1; 4} //  CPL (Complement A)
             0x37 => {self.set_carry_flag(); self.clear_half_carry_flag(); self.clear_sub_flag(); self.pc+=1; 4} // SCF (Set Carry Flag)
             0x3F => {if self.is_carry_flag_set(){self.clear_carry_flag()}else{self.set_carry_flag()}; self.clear_half_carry_flag(); self.clear_sub_flag(); self.pc+=1; 4} // CCF (Flip Carry Flag)
-            0xF3 => {self.interrupt_master_enable = false; self.pc+=1;console_print("W"); 4} // DI
-            0xFB => {self.enable_interrupt_next_instruction = true; self.pc+=1;console_print("E"); 4} // EI
+            0xF3 => {self.interrupt_master_enable = false; self.pc+=1; 4} // DI
+            0xFB => {self.enable_interrupt_next_instruction = true; self.pc+=1; 4} // EI
 
             // 8 Bit register loads
             0x06 => {self.reg[B] = self.mem.read_8bit(self.pc+1); self.pc+=2; 8} // LD B, d8
@@ -193,6 +193,7 @@ impl CPU{
             0xD0 => {if !self.is_carry_flag_set(){let val = self.mem.read_16bit(self.sp+1); self.sp+=2; self.pc = val as usize; 20}else{self.pc+=1; 8}} // RET NC
             0xC8 => {if self.is_zero_flag_set(){let val = self.mem.read_16bit(self.sp+1); self.sp+=2; self.pc = val as usize; 20}else{self.pc+=1; 8}} // RET Z
             0xD8 => {if self.is_carry_flag_set(){let val = self.mem.read_16bit(self.sp+1); self.sp+=2; self.pc = val as usize; 20}else{self.pc+=1; 8}} // RET C
+            0xD9 => {let val = self.mem.read_16bit(self.sp+1); self.enable_interrupt_next_instruction = true; self.sp+=2; self.pc = val as usize; 16} // RETI
 
             // Stack operations
             0xC5 => {self.mem.write_16bit(self.sp-1, self.get_bc()); self.sp-=2; self.pc+=1; 16} // PUSH BC
