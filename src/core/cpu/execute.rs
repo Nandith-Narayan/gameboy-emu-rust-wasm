@@ -10,7 +10,12 @@ impl CPU{
         // Handle interrupts
         if self.interrupt_master_enable {
             self.handle_interrupts();
+        }else{
+            self.interrupt_master_enable = self.enable_interrupt_next_instruction;
+            self.enable_interrupt_next_instruction = false;
         }
+
+
 
         // Fetch instruction
         let opcode = self.mem.read_8bit(self.pc);
@@ -27,7 +32,8 @@ impl CPU{
             0x2F => {self.reg[A] = self.reg[A] ^ 0xFF; self.set_sub_flag(); self.set_half_carry_flag(); self.pc+=1; 4} //  CPL (Complement A)
             0x37 => {self.set_carry_flag(); self.clear_half_carry_flag(); self.clear_sub_flag(); self.pc+=1; 4} // SCF (Set Carry Flag)
             0x3F => {if self.is_carry_flag_set(){self.clear_carry_flag()}else{self.set_carry_flag()}; self.clear_half_carry_flag(); self.clear_sub_flag(); self.pc+=1; 4} // CCF (Flip Carry Flag)
-
+            0xF3 => {self.interrupt_master_enable = false; self.pc+=1;console_print("W"); 4} // DI
+            0xFB => {self.enable_interrupt_next_instruction = true; self.pc+=1;console_print("E"); 4} // EI
 
             // 8 Bit register loads
             0x06 => {self.reg[B] = self.mem.read_8bit(self.pc+1); self.pc+=2; 8} // LD B, d8

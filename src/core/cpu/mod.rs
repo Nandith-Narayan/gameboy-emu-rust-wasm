@@ -13,6 +13,7 @@ pub struct CPU{
     pub pc: usize, // Program counter
     pub sp: usize, // Stack pointer
     pub interrupt_master_enable: bool,
+    pub enable_interrupt_next_instruction: bool,
     pub mem: Memory,
     pub ppu: PPU,
     pub frame_done: bool,
@@ -35,6 +36,7 @@ impl CPU{
         self.pc = 0x100;
         self.sp = 0xFFFE;
         self.interrupt_master_enable = false;
+        self.enable_interrupt_next_instruction = false;
         self.mem = init_memory();
         self.ppu = init_ppu();
         self.frame_done = false;

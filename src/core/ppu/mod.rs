@@ -2,6 +2,7 @@ mod sprite;
 mod pixel;
 
 use std::collections::VecDeque;
+use crate::console_print;
 use crate::core::memory::Memory;
 use crate::core::ppu::pixel::Pixel;
 use crate::core::ppu::PPUMode::*;
@@ -12,6 +13,7 @@ pub const CYCLES_PER_FRAME: usize = 70224;
 pub const CYCLES_PER_LINE: usize = 456;
 pub const CYCLES_UNTIL_VBLANK: usize = 65664;
 
+#[derive(Clone, PartialEq)]
 pub enum PPUMode {
     OAMScan,
     Drawing,
@@ -21,6 +23,7 @@ pub enum PPUMode {
 
 pub struct PPU{
     pub ppu_mode: PPUMode,
+    pub old_ppu_mode: PPUMode,
     pub cycle_count: usize,
     sprite_buffer: Vec<Sprite>,
     background_fifo: VecDeque<u8>,
@@ -30,18 +33,22 @@ pub struct PPU{
     scx: usize,
     scy: usize,
     ly: usize,
+    lyc: usize,
     wx: usize,
     wy: usize,
     wy_eq_ly_occurred: bool,
     in_window: bool,
     window_line_counter: usize,
     lcdc: usize, // LCD control
-
+    interrupt_condition_met: bool,
+    stat: usize,
     fetcher_x_pos: usize,
     tile_number: usize,
     tile_data_low: u8,
     tile_data_high: u8,
     lcd_x_pos: usize,
+
+
 
     current_sprite: Sprite,
 
@@ -53,6 +60,7 @@ pub struct PPU{
 pub fn init_ppu() -> PPU{
     return PPU{
         ppu_mode: OAMScan,
+        old_ppu_mode: OAMScan,
         cycle_count: 0,
         sprite_buffer: vec![],
         background_fifo: VecDeque::new(),
@@ -62,13 +70,15 @@ pub fn init_ppu() -> PPU{
         scx: 0,
         scy: 0,
         ly: 0,
+        lyc: 0,
         wx: 0,
         wy: 0,
         wy_eq_ly_occurred: false,
         in_window: false,
         window_line_counter: 0,
         lcdc: 0,
-
+        interrupt_condition_met: false,
+        stat: 0,
         fetcher_x_pos: 0,
         tile_number: 0,
         tile_data_low: 0,
@@ -192,6 +202,7 @@ impl PPU {
                     // else, enter the next line's OAM scan mode.
                     if self.cycle_count >= CYCLES_UNTIL_VBLANK{
                         self.ppu_mode = VBlank;
+                        mem.interrupt_request |= 0b1; // Request V Blank Interrupt
                     }else {
                         self.ppu_mode = OAMScan;
                     }
@@ -219,6 +230,29 @@ impl PPU {
                 }
             },
         };
+
+        // Check if LCD STAT interrupt should be requested
+        let previous_interrupt_condition_met = self.interrupt_condition_met;
+        if (self.ly == self.lyc) && (self.stat&0x040) != 0 {
+            self.interrupt_condition_met = true;
+        }else if self.ppu_mode != self.old_ppu_mode && self.ppu_mode == OAMScan && (self.stat&0x20 != 0) {
+            self.interrupt_condition_met = true;
+        }else if self.ppu_mode != self.old_ppu_mode && self.ppu_mode == VBlank && (self.stat&0x10 != 0) {
+            self.interrupt_condition_met = true;
+        }else if self.ppu_mode != self.old_ppu_mode && self.ppu_mode == HBlank && (self.stat&0x8 != 0) {
+            self.interrupt_condition_met = true;
+        }else{
+            self.interrupt_condition_met = false;
+        }
+
+        self.old_ppu_mode = self.ppu_mode.clone();
+
+        if !previous_interrupt_condition_met && self.interrupt_condition_met {
+            mem.interrupt_request |= 0x2;
+            console_print(format!("{}, {}", mem.interrupt_request, mem.interrupt_enable).as_str());
+        }
+
+
 
         return finished_frame;
     }
@@ -317,7 +351,9 @@ impl PPU {
         self.scx = mem.io_reg[0x43] as usize;
         self.scy = mem.io_reg[0x42] as usize;
         self.ly = mem.io_reg[0x44] as usize;
+        self.lyc = mem.io_reg[0x45] as usize;
         self.lcdc = mem.io_reg[0x40] as usize;
+        self.stat = mem.io_reg[0x41] as usize;
         self.wy = mem.io_reg[0x4A] as usize;
         self.wx = mem.io_reg[0x4B] as usize;
 
