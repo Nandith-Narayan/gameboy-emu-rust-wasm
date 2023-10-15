@@ -96,6 +96,7 @@ pub fn init_ppu() -> PPU{
 impl PPU {
     pub fn run_ppu_cycle(&mut self, mem: &mut Memory) -> bool{
         let mut finished_frame = false;
+        self.load_ppu_registers(mem);
 
         match &self.ppu_mode{
             // Scan Object Attribute Memory
@@ -107,7 +108,11 @@ impl PPU {
                 let byte_3 = mem.oam[base+2];
                 let byte_4 = mem.oam[base+3];
                 let sprite = create_sprite(byte_1, byte_2, byte_3, byte_4);
-                if self.sprite_buffer.len() < 10 && self.ly + 16 >= sprite.y_pos && self.ly + 16 < sprite.y_pos + 8{
+                let mut sprite_height = 8;
+                if self.lcdc & 0x04 !=0 {
+                    sprite_height = 16;
+                }
+                if self.sprite_buffer.len() < 10 && self.ly + 16 >= sprite.y_pos && self.ly + 16 < sprite.y_pos + sprite_height{
                     self.sprite_buffer.push(sprite);
                 }
 
@@ -127,8 +132,6 @@ impl PPU {
             },
             // PPU actively drawing pixels state
             Drawing => {
-
-                self.load_ppu_registers(mem);
 
                 // Check for sprite fetch
                 for sprite in self.sprite_buffer.iter_mut(){
