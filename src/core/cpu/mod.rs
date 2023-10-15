@@ -42,6 +42,9 @@ impl CPU{
         self.frame_done = false;
         self.unique_ops = vec![];
         self.total_cycles = 0;
+
+        // TODO: Implement Joypad Input
+        self.mem.io_reg[0] = 0xFF;
     }
 
 

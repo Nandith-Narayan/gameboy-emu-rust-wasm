@@ -249,10 +249,28 @@ impl PPU {
 
         if !previous_interrupt_condition_met && self.interrupt_condition_met {
             mem.interrupt_request |= 0x2;
-            console_print(format!("{}, {}", mem.interrupt_request, mem.interrupt_enable).as_str());
+            //console_print(format!("{}, {}", mem.interrupt_request, mem.interrupt_enable).as_str());
         }
 
+        self.stat &= 0b11111100; // Clear bits 0-1
+        self.stat |= 0x80; // Set bit 7 (unused, always 1)
+        // Set bits 0-1 based on PPU mode
+        match self.ppu_mode{
+            OAMScan => {
+                self.stat |= 0x2;
+            }
+            Drawing => {
+                self.stat |= 0x3;
+            }
+            HBlank => {
+                self.stat |= 0x0;
+            }
+            VBlank => {
+                self.stat |= 0x1;
+            }
+        }
 
+        mem.io_reg[0x41] = self.stat as u8;
 
         return finished_frame;
     }
@@ -287,8 +305,14 @@ impl PPU {
             },
             FetchTileNumber => {
                 let mut tile_address: usize = 0x9800;
-                if self.lcdc & 0x08 != 0{ // Bit 3 of LCDC selects background tile map (0=9800-9BFF, 1=9C00-9FFF)
-                    tile_address = 0x9C00;
+                if !self.in_window {
+                    if self.lcdc & 0x08 != 0 { // Bit 3 of LCDC selects background tile map (0=9800-9BFF, 1=9C00-9FFF)
+                        tile_address = 0x9C00;
+                    }
+                }else {
+                    if self.lcdc & 0x40 != 0 { // Bit 6 of LCDC selects window tile map (0=9800-9BFF, 1=9C00-9FFF)
+                        tile_address = 0x9C00;
+                    }
                 }
 
                 let mut x_offset= self.fetcher_x_pos;
@@ -306,25 +330,33 @@ impl PPU {
                 self.background_fetcher_mode = FetchTileDataLow;
             },
             FetchTileDataLow => {
+                let mut base_pointer = (0x9000 + ((self.tile_number as i8) as i32) * 16) as usize;
+                if self.lcdc & 0x10 !=0{
+                    base_pointer = 0x8000 + (self.tile_number * 16);
+                }
                 if !self.in_window {
-                    self.tile_data_low = mem.read_8bit(0x8000 + ((self.tile_number * 16) + 2 * ((self.ly + self.scy) % 8)));
+                    self.tile_data_low = mem.read_8bit(base_pointer + 2 * ((self.ly + self.scy) % 8));
                 }else{
-                    self.tile_data_low = mem.read_8bit(0x8000 + ((self.tile_number * 16) + 2 * (self.window_line_counter % 8)));
+                    self.tile_data_low = mem.read_8bit(base_pointer + 2 * (self.window_line_counter % 8));
                 }
                 self.background_fetcher_mode = FetchTileDataHigh;
             },
             FetchTileDataHigh => {
+                let mut base_pointer = (0x9001 + ((self.tile_number as i8) as i32) * 16) as usize;
+                if self.lcdc & 0x10 !=0{
+                    base_pointer = 0x8001 + (self.tile_number * 16);
+                }
                 if !self.in_window {
-                    self.tile_data_high = mem.read_8bit(0x8000 + (((self.tile_number * 16) + 2 * ((self.ly + self.scy) % 8)) + 1));
+                    self.tile_data_high = mem.read_8bit(base_pointer + 2 * ((self.ly + self.scy) % 8));
                 }else{
-                    self.tile_data_high = mem.read_8bit(0x8000 + (((self.tile_number * 16) + 2 * (self.window_line_counter % 8)) + 1));
+                    self.tile_data_high = mem.read_8bit(base_pointer + 2 * (self.window_line_counter % 8));
                 }
                 self.background_fetcher_mode = PushToFIFO;
             },
             PushToFIFO => {
                 if self.background_fifo.is_empty() {
                     for _ in 0..8{
-                        let pixel = ((self.tile_data_high & 0x1) << 1) + (self.tile_data_low & 0x1);
+                        let mut pixel = ((self.tile_data_high & 0x1) << 1) + (self.tile_data_low & 0x1);
                         self.tile_data_low >>= 1;
                         self.tile_data_high >>= 1;
 
