@@ -107,12 +107,22 @@ impl PPU {
                 let byte_2 = mem.oam[base+1];
                 let byte_3 = mem.oam[base+2];
                 let byte_4 = mem.oam[base+3];
-                let sprite = create_sprite(byte_1, byte_2, byte_3, byte_4);
+                let mut sprite = create_sprite(byte_1, byte_2, byte_3, byte_4);
                 let mut sprite_height = 8;
-                if self.lcdc & 0x04 !=0 {
+                if self.lcdc & 0x4 !=0 {
                     sprite_height = 16;
                 }
-                if self.sprite_buffer.len() < 10 && self.ly + 16 >= sprite.y_pos && self.ly + 16 < sprite.y_pos + sprite_height{
+
+                if sprite_height == 16 {
+                    if (self.ly+16 < sprite.y_pos+8 && !sprite.y_flip_flag) || (self.ly+16 >= sprite.y_pos+8 && sprite.y_flip_flag) {
+                        sprite.tile_number &=0xFE;
+                    }else{
+                        sprite.tile_number |=0x1;
+                    }
+
+                }
+
+                if self.sprite_buffer.len() < 10 && self.ly + 16 >= sprite.y_pos && ((self.ly + 16) < (sprite.y_pos + 8)){
                     self.sprite_buffer.push(sprite);
                 }
 
@@ -176,6 +186,7 @@ impl PPU {
                     self.background_fetcher_mode = FetchTileNumber;
                     self.fetcher_x_pos = 0;
                     self.background_fifo.clear();
+
                 }
 
 
@@ -362,7 +373,9 @@ impl PPU {
                         let mut pixel = ((self.tile_data_high & 0x1) << 1) + (self.tile_data_low & 0x1);
                         self.tile_data_low >>= 1;
                         self.tile_data_high >>= 1;
-
+                        /*if self.in_window{
+                            pixel = 3;
+                        }*/
                         self.background_fifo.push_back(pixel);
                     }
 

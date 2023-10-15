@@ -49,6 +49,7 @@ impl CPU{
             0x2A => {self.reg[A] = self.mem.read_8bit(self.get_hl() as usize); self.inc_hl(); self.pc+=1; 8} // LD A, (HL+)
             0x3A => {self.reg[A] = self.mem.read_8bit(self.get_hl() as usize); self.dec_hl(); self.pc+=1; 8} // LD A, (HL-)
             0xF0 => {self.reg[A] = self.mem.read_8bit(self.mem.read_8bit(self.pc + 1) as usize + 0xFF00); self.pc+=2; 12} // LDH A, (a8)
+            0xF2 => {let val = self.mem.read_8bit(self.reg[C] as usize + 0xFF00); self.reg[A] = val; self.pc+=1; 8} // LD A, (C)
 
             // 8 Bit register moves
             0x40 => {self.reg[B] = self.reg[B]; self.pc+=1; 4} // LD B, B
@@ -122,6 +123,7 @@ impl CPU{
             0x22 => {self.mem.write_8bit(self.get_hl() as usize, self.reg[A]); self.inc_hl(); self.pc+=1; 8} // LD (HL+), A
             0x32 => {self.mem.write_8bit(self.get_hl() as usize, self.reg[A]); self.dec_hl(); self.pc+=1; 8} // LD (HL-), A
             0xE0 => {self.mem.write_8bit(self.mem.read_8bit(self.pc + 1) as usize + 0xFF00, self.reg[A]); self.pc+=2; 12} // LDH (a8), A
+            0xE2 => {self.mem.write_8bit(self.reg[C] as usize + 0xFF00, self.reg[A]); self.pc+=1; 8} // LD (C), A
 
             // 16 Bit register loads
             0x01 => {let val = self.mem.read_16bit(self.pc + 1); self.set_bc(val); self.pc+=3; 12} // LD BC, d16
